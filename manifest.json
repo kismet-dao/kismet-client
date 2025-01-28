@@ -1,0 +1,22 @@
+{
+    "id": "kismet-wallet-addon",
+    "name": "Cryptocurrency Wallet",
+    "version": "1.0.0",
+    "description": "Cryptocurrency wallet add-on for Kismet Client",
+    "author": "Raymond Demarteau",
+    "homepage": "https://github.com/KismetDAO/kismet-wallet",
+    "repository": "https://github.com/KismetDAO/kismet-wallet",
+    "license": "MIT",
+    "main": "dist/index.js",
+    "engines": {
+      "kismet": ">=0.1.0"
+    },
+    "categories": [
+      "wallets",
+      "cryptocurrency"
+    ],
+    "activationEvents": [
+      "onCommand:wallet",
+      "onView:wallet"
+    ]
+  }

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kismet CLI Slim</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <style>
+        #current-model {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            position: relative; /* Make the chat area a positioning context */
+        }
+        #current-model {
+            position: sticky; /* Stick to the top or bottom */
+            top: 0; /* Stick to the top */
+            font-size: 12px;
+            color: #666;
+            padding: 5px;
+            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
+            border-bottom: 1px solid #ccc; /* Add a separator */
+            z-index: 1; /* Ensure it stays above chat messages */
+        }
+        #chat-input {
+            display: flex;
+            align-items: center;
+        }
+        #chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        #chat-input button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #chat-input button:hover {
+            background-color: #0056b3;
+        }
+        .message.think {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #4caf50;
+    padding: 10px;
+    margin: 10px 0;
+    font-style: italic;
+}
+        /* File upload icon */
+        #file-upload {
+            display: none; /* Hide the default file input */
+        }
+        #file-upload-label {
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 24px;
+            color: #007bff;
+        }
+        #file-upload-label:hover {
+            color: #0056b3;
+        }
+        /* Chat message styling */
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+        .message.user {
+            background-color: #007bff;
+            color: #fff;
+            align-self: flex-end;
+        }
+        .message.ai {
+            background-color: #f0f0f0;
+            color: #333;
+            align-self: flex-start;
+        }
+        .message .content {
+            word-wrap: break-word;
+        }
+        .message .timestamp {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+        /* Thought process styling */
+        .message.think {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+            padding: 10px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        /* Typing animation */
+        .typing {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #333;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1s infinite;
+        }
+        @keyframes typing {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar will be injected here -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div id="app">
+        <!-- Current Model Display -->
+        <div id="chat">
+            <!-- Current Model Display -->
+            <div id="current-model">
+                Current Model: <span id="current-model-name">Loading...</span>
+            </div>
+        </div>
+        
+        <div id="chat-input">
+            <!-- File upload icon -->
+            <label for="file-upload" id="file-upload-label">📎</label>
+            <input type="file" id="file-upload" accept=".txt,.pdf,.jpg,.png,.jpeg">
+            <input type="text" id="chat-input-field" placeholder="Type your message here...">
+            <button id="chat-send-button">Send</button>
+        </div>
+    </div>
+
+    <!-- Include chat.js -->
+    <script src="js/chat.js"></script>
+    <!-- Include main.js (if needed) -->
+    <script src="js/main.js"></script>
+</body>
+</html>
+</body>
+</html>

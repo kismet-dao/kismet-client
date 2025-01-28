@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Kismet CLI Slim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Profile and Preferences Sections */
+        .profile-section,
+        .preferences-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .profile-section h2,
+        .preferences-section h2 {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .profile-section p,
+        .preferences-section p {
+            font-size: 14px;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        /* Form Styles */
+        #settings-form {
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #1abc9c;
+            outline: none;
+            box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
+        }
+
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        /* Button Styles */
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #1abc9c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #16a085;
+        }
+
+        /* Message Styles */
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+        <link rel="stylesheet" href="css/styles.css">
+        <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+    <!-- Sidebar will be injected here -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>Settings</h1>
+            <p>Manage your profile, preferences, and application settings.</p>
+        </div>
+
+        <!-- Profile Section -->
+        <div class="profile-section">
+            <h2>Profile</h2>
+            <p><strong>Name:</strong> <span id="profile-name">Loading...</span></p>
+            <p><strong>Timezone:</strong> <span id="profile-timezone">Loading...</span></p>
+            <p><strong>Preferred Language:</strong> <span id="profile-language">Loading...</span></p>
+            <p><strong>Voice Output:</strong> <span id="profile-voice-output">Loading...</span></p>
+        </div>
+
+        <!-- Preferences Section -->
+        <div class="preferences-section">
+            <h2>Preferences</h2>
+            <p><strong>Default Model:</strong> <span id="preferences-model">Loading...</span></p>
+        </div>
+
+        <!-- Settings Form -->
+        <form id="settings-form">
+            <div class="form-group">
+                <label for="theme">Theme:</label>
+                <select id="theme" name="theme">
+                    <option value="light">Light Mode</option>
+                    <option value="dark">Dark Mode</option>
+                    <option value="default">System Default</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="notifications">
+                    <input type="checkbox" id="notifications" name="notifications">
+                    Enable Notifications
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="logLevel">Log Level:</label>
+                <select id="logLevel" name="logLevel">
+                    <option value="error">Error</option>
+                    <option value="info">Info</option>
+                    <option value="debug">Debug</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn">Save Settings</button>
+        </form>
+
+        <!-- Message Display -->
+        <div id="message" class="message"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/settings.js"></script>
+</body>
+</html>

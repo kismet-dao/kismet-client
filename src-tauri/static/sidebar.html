@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidebar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <!-- Top Section (Start New Chat Button and Play/Pause Icons) -->
+        <div id="top-section">
+            <!-- Play/Pause Icons -->
+            <div class="play-pause-icons">
+                <a id="play" href="#">
+                    <i class="fas fa-play"></i>
+                </a>
+                <a id="pause" href="#">
+                    <i class="fas fa-pause"></i>
+                </a>
+            </div>
+
+            <!-- Start New Chat Button -->
+            <ul>
+                <li>
+                    <a id="start-new-chat" href="./chat.html">
+                        <i class="fas fa-plus"></i> New chat
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+<!-- History Section -->
+<div id="history-section">
+    <ul>
+        <!-- Buttons for unique chat IDs will be added here dynamically -->
+    </ul>
+</div>
+
+        <!-- Bottom Section (Other Buttons and Footer) -->
+        <div id="bottom-section">
+            <ul>
+                <li>
+                    <a id="addons" href="./addons.html">
+                        <i class="fas fa-puzzle-piece"></i> Add-ons
+                    </a>
+                </li>
+                <li>
+                    <a id="logout" href="./logout.html">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Icon Row (Settings, Profile, Diagnostics, Key, Help) -->
+            <div class="icon-row">
+                <a id="profile" href="./index.html">
+                    <i class="fas fa-house"></i>
+                </a>
+                <a id="settings" href="./settings.html">
+                    <i class="fas fa-cog"></i>
+                </a>
+                <a id="key" href="./api-key.html">
+                    <i class="fas fa-key"></i>
+                </a>
+                <a id="help" href="./help.html">
+                    <i class="fas fa-question-circle"></i> 
+                </a>
+            </div>
+
+            <!-- Footer -->
+            <footer>
+                <small>Kismet GUI Client v0.1</small>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

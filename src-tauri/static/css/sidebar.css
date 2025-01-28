@@ -1,0 +1,217 @@
+        /* Sidebar Styles */
+        #sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: #fff;
+            height: 100vh;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Section (Start New Chat Button and Icons) */
+        #top-section {
+            flex: 0; /* Do not grow or shrink */
+        }
+
+        /* Bottom Section (Other Buttons and Footer) */
+        #bottom-section {
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Align content to the bottom */
+            margin-top: 10px;
+        }
+
+        /* Footer Styles */
+        footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #8b8989; /* Light gray color for the footer text */
+            margin-top: 10px; /* Add some space above the footer */
+            margin-bottom: 20px;
+            border-top: 1px solid #34495e; /* Optional: Add a subtle border above the footer */
+        }
+
+        #sidebar ul {
+            list-style: none;
+            padding: 0; /* Remove default padding */
+            margin: 0; /* Remove default margin */
+        }
+
+        #sidebar ul li {
+            margin-bottom: 15px;
+        }
+
+        #sidebar ul li a {
+            width: 100%;
+            padding: 10px 15px; /* Add equal padding on left and right */
+            background-color: #34495e;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            text-decoration: none; /* Remove underline */
+            box-sizing: border-box; /* Ensure padding is included in the width */
+            transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+        }
+
+        #sidebar ul li a:hover {
+            background-color: #1abc9c; /* Change background color on hover */
+        }
+
+        #sidebar ul li a i {
+            margin-right: 10px;
+        }
+
+        /* Button Styles */
+        #start-new-chat {
+            background-color: #007bff;
+        }
+
+        #start-new-chat:hover {
+            background-color: #0056b3;
+        }
+
+        /* Icon Row Styles */
+        .icon-row {
+            display: flex;
+            gap: 8px; /* Add 8px gap between icons */
+            justify-content: flex-start; /* Align icons to the left */
+            padding: 10px 0; /* Add some vertical padding */
+        }
+
+        .icon-row a {
+            color: #fff; /* Make icons white */
+            text-decoration: none; /* Remove underline */
+            font-size: 18px; /* Adjust icon size */
+            margin-left: 20px;
+            transition: color 0.3s ease; /* Smooth color transition */
+        }
+
+        /* Remove left margin for the first icon in the row */
+        .icon-row a:first-child {
+            margin-left: 4px;
+        }
+
+        .icon-row a:hover {
+            color: #1abc9c; /* Change color on hover */
+        }
+
+        /* Play/Pause Icons */
+        .play-pause-icons {
+            display: flex;
+            flex-direction: row;
+            gap: 10px; /* Add 10px gap between icons */
+            margin-bottom: 15px; /* Add some space below the icons */
+        }
+
+        .play-pause-icons a {
+            color: #fff; /* Make icons white */
+            text-decoration: none; /* Remove underline */
+            margin-left: 20px;
+            font-size: 18px; /* Adjust icon size */
+            transition: color 0.3s ease; /* Smooth color transition */
+        }
+
+        /* Remove left margin for the first icon in the row */
+        .play-pause-icons a:first-child {
+            margin-left: 4px;
+        }
+
+        .play-pause-icons a:hover {
+            color: #1abc9c; /* Change color on hover */
+        }
+
+        /* History Section Styles */
+        #history-section {
+            flex: 1; /* Take up remaining space */
+            overflow-y: auto; /* Enable vertical scrolling */
+            margin: 15px 0; /* Add some margin */
+            padding-right: 8px; /* Add spacing between scrollbar and items */
+        }
+
+        #history-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #history-section ul li {
+            margin-bottom: 10px;
+        }
+
+        #history-section ul li a {
+            width: 100%;
+            padding: 10px 15px;
+            background-color: #253544;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+        }
+
+        /* Style for chat history buttons */
+#history-section ul li a.chat-history-button {
+    width: 100%;
+    padding: 10px 15px;
+    background-color: #34495e;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease;
+}
+
+#history-section ul li a.chat-history-button:hover {
+    background-color: rgba(26, 188, 156, 0.8); /* More opaque green */
+}
+
+        /* Modified hover effect for history buttons */
+        #history-section ul li a:hover {
+            background-color: rgba(26, 188, 156, 0.8); /* More opaque green */
+            box-shadow: none; /* Remove the ring effect */
+        }
+
+        /* Custom Scrollbar Styles */
+        #history-section::-webkit-scrollbar {
+            width: 8px; /* Width of the scrollbar */
+        }
+
+        #history-section::-webkit-scrollbar-track {
+            background: #34495e; /* Color of the track */
+            border-radius: 4px;
+        }
+
+        #history-section::-webkit-scrollbar-thumb {
+            background: #332f2f; /* Color of the scrollbar thumb */
+            border-radius: 4px;
+        }
+
+        #history-section::-webkit-scrollbar-thumb:hover {
+            background: #16a085; /* Color of the scrollbar thumb on hover */
+        }
+
+                /* Add specific style for logout button hover */
+                #sidebar ul li a#logout:hover {
+            background-color: #dc3545; /* Bootstrap's danger red */
+        }

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <style>
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+            position: relative; /* For password toggle positioning */
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 40px 10px 10px; /* Space for toggle icon */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: #1abc9c;
+            outline: none;
+            box-shadow: 0 0 5px rgba(26, 188, 156, 0.5); /* Focus state */
+        }
+
+        /* Password Toggle Icon */
+        .form-group .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 65%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group .toggle-password:hover {
+            color: #1abc9c;
+        }
+
+        /* Button Styles */
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #1abc9c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 40px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #16a085;
+        }
+
+        /* Footer Styles */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #1abc9c;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Sidebar will be injected here -->
+    <div id="sidebar-container"></div>
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>API Key Management</h1>
+            <p>Enter your API keys below to enable integrations with third-party services.</p>
+        </div>
+
+        <!-- Form -->
+        <form id="api-key-form">
+            <!-- OpenAI API Key -->
+            <div class="form-group">
+                <label for="openai-api-key">
+                    OpenAI API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your OpenAI API key is used to access OpenAI's GPT models. You can find it in your OpenAI account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="openai-api-key" name="openai-api-key" placeholder="Enter your OpenAI API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('openai-api-key')"></i>
+            </div>
+
+            <!-- Google AI API Key -->
+            <div class="form-group">
+                <label for="google-ai-api-key">
+                    Google AI API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Google AI API key is used to access Google's AI services. You can generate it in the Google Cloud Console.</span>
+                    </span>
+                </label>
+                <input type="password" id="google-ai-api-key" name="google-ai-api-key" placeholder="Enter your Google AI API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('google-ai-api-key')"></i>
+            </div>
+
+            <!-- Hugging Face API Key -->
+            <div class="form-group">
+                <label for="huggingface-api-key">
+                    Hugging Face API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Hugging Face API key is used to access Hugging Face's models and datasets. You can find it in your Hugging Face account settings.</span>
+                    </span>
+                </label>
+                <input type="password" id="huggingface-api-key" name="huggingface-api-key" placeholder="Enter your Hugging Face API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('huggingface-api-key')"></i>
+            </div>
+
+            <!-- Stability API Key -->
+            <div class="form-group">
+                <label for="stability-api-key">
+                    Stability API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Stability API key is used to access Stability AI's image generation models. You can find it in your Stability AI account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="stability-api-key" name="stability-api-key" placeholder="Enter your Stability API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('stability-api-key')"></i>
+            </div>
+
+            <!-- Claude API Key -->
+            <div class="form-group">
+                <label for="claude-api-key">
+                    Claude API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Claude API key is used to access Anthropic's Claude models. You can find it in your Anthropic account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="claude-api-key" name="claude-api-key" placeholder="Enter your Claude API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('claude-api-key')"></i>
+            </div>
+
+            <!-- Replicate API Token -->
+            <div class="form-group">
+                <label for="replicate-api-token">
+                    Replicate API Token
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Replicate API token is used to access Replicate's machine learning models. You can find it in your Replicate account settings.</span>
+                    </span>
+                </label>
+                <input type="password" id="replicate-api-token" name="replicate-api-token" placeholder="Enter your Replicate API token">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('replicate-api-token')"></i>
+            </div>
+
+            <!-- Pinecone API Key -->
+            <div class="form-group">
+                <label for="pinecone-api-key">
+                    Pinecone API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Pinecone API key is used to access Pinecone's vector database services. You can find it in your Pinecone account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="pinecone-api-key" name="pinecone-api-key" placeholder="Enter your Pinecone API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('pinecone-api-key')"></i>
+            </div>
+
+            <!-- SERPAPI API Key -->
+            <div class="form-group">
+                <label for="serpapi-api-key">
+                    SERPAPI API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your SERPAPI API key is used to access SERPAPI's search engine results. You can find it in your SERPAPI account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="serpapi-api-key" name="serpapi-api-key" placeholder="Enter your SERPAPI API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('serpapi-api-key')"></i>
+            </div>
+
+            <!-- Eleven Labs API Key -->
+            <div class="form-group">
+                <label for="eleven-labs-api-key">
+                    Eleven Labs API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Eleven Labs API key is used to access Eleven Labs' text-to-speech services. You can find it in your Eleven Labs account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="eleven-labs-api-key" name="eleven-labs-api-key" placeholder="Enter your Eleven Labs API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('eleven-labs-api-key')"></i>
+            </div>
+
+            <!-- XAI API Key -->
+            <div class="form-group">
+                <label for="xai-api-key">
+                    XAI API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your XAI API key is used to access XAI's services. You can find it in your XAI account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="xai-api-key" name="xai-api-key" placeholder="Enter your XAI API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('xai-api-key')"></i>
+            </div>
+
+            <!-- Cohere API Key -->
+            <div class="form-group">
+                <label for="cohere-api-key">
+                    Cohere API Key
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Your Cohere API key is used to access Cohere's natural language processing models. You can find it in your Cohere account dashboard.</span>
+                    </span>
+                </label>
+                <input type="password" id="cohere-api-key" name="cohere-api-key" placeholder="Enter your Cohere API key">
+                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('cohere-api-key')"></i>
+            </div>
+
+            <!-- Save Button -->
+            <button type="submit" class="btn">Save API Keys</button>
+        </form>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Need help? <a href="./help.html">Visit our help page</a>.</p>
+        </div>
+</div>
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/api-key.js"></script>
+</body>
+</html>

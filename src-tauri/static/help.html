@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - Kismet CLI Slim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/help.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+    <!-- Sidebar will be injected here -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>Help Center</h1>
+            <p>Find answers to faq questions and learn how to use Kismet CLI Slim.</p>
+            <!-- Search Bar -->
+        </div>
+        <input type="text" id="search-bar" class="search-bar" placeholder="Search help articles...">
+
+        <div class="faq-section">
+            <div class="faq-grid">
+                <div class="faq">
+                    <h3>How do I start a new chat?</h3>
+                </div>
+
+                <div class="faq">
+                    <h3>How do I change my settings?</h3>
+                </div>
+
+                <div class="faq">
+                    <h3>Where can I find my chat history?</h3>
+                </div>
+
+                <div class="faq">
+                    <h3>How do I switch between models?</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-questions-section">
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-questions-list">
+                <a href="#how-to-reset-password" class="faq-question-link">How do I reset my password?</a>
+                <a href="#use-offline" class="faq-question-link">Can I use Kismet CLI Slim offline?</a>
+                <a href="#contact-support" class="faq-question-link">How do I contact support?</a>
+                <a href="#is-it-free" class="faq-question-link">Is Kismet CLI Slim free to use?</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Search Functionality
+        const searchBar = document.getElementById('search-bar');
+        const faqItems = document.querySelectorAll('.faq');
+        const faqQuestionLinks = document.querySelectorAll('.faq-question-link');
+
+        searchBar.addEventListener('input', () => {
+            const searchTerm = searchBar.value.toLowerCase();
+
+            // Filter FAQs
+            faqItems.forEach(faq => {
+                const text = faq.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    faq.style.display = 'flex'; // Show matching FAQs
+                } else {
+                    faq.style.display = 'none'; // Hide non-matching FAQs
+                }
+            });
+
+            // Filter faq Questions
+            faqQuestionLinks.forEach(link => {
+                const text = link.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    link.style.display = 'block'; // Show matching links
+                } else {
+                    link.style.display = 'none'; // Hide non-matching links
+                }
+            });
+        });
+    </script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden; /* Disable global scrolling */
+}
+
+
+#app {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto; /* Enable scrolling for main content */
+}
+
+/* Header Styles */
+.header {
+    text-align: left;
+    margin-bottom: 55px;
+}
+
+.header h1 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.header p {
+    color: #666;
+    margin: 10px 0 0;
+    font-size: 16px;
+}
+
+.search-bar {
+    width: 97%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.addons-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.addon-item {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    text-align: center;
+    font-size: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.addon-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+.pagination button {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.pagination button:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+
+
+
+
+                /* Tooltip Styles */
+                .tooltip {
+                    position: relative;
+                    display: inline-block;
+                    margin-left: 5px;
+                    cursor: pointer;
+                    color: #666;
+                }
+        
+                .tooltip .tooltiptext {
+                    visibility: hidden;
+                    width: 200px;
+                    background-color: #555;
+                    color: #fff;
+                    text-align: center;
+                    border-radius: 6px;
+                    padding: 5px;
+                    position: absolute;
+                    z-index: 1;
+                    bottom: 125%; /* Position above the icon */
+                    left: 50%;
+                    margin-left: -100px; /* Center the tooltip */
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+        
+                .tooltip:hover .tooltiptext {
+                    visibility: visible;
+                    opacity: 1;
+                }

@@ -1,0 +1,31 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Kismet Client",
+  "version": "0.1.0",
+  "identifier": "com.kismet.dev",
+  "build": {
+    "frontendDist": "static"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Kismet Client",
+        "width": 1000,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ]
+  }
+}
