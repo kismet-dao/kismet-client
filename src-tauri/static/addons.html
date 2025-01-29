@@ -85,13 +85,23 @@
         .addon-downloads {
             display: flex;
             align-items: center;
-            gap: 4px;
             justify-content: center;
         }
 
         .addon-downloads::before {
             content: "↓";
             font-size: 0.9rem;
+            margin-right: 4px;
+            margin-bottom: 4px;
+            color: #22c55e; /* Green color */
+            display: flex;
+            align-items: center;
+        }
+
+        /* Ensure the number is vertically aligned */
+        .addon-downloads span {
+            display: flex;
+            align-items: center;
         }
 
         .tooltip {
@@ -129,6 +139,39 @@
             visibility: visible;
             opacity: 1;
         }
+
+        .pagination {
+        margin-top: auto;
+        padding: 20px 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;  /* Increased from 1.5rem to 2rem for more spacing */
+        border-top: 1px solid #e5e7eb;
+    }
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: #f3f4f6;
+}
+
+.pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+#page-info {
+    font-size: 0.95rem;
+    color: #4b5563;
+}
     </style>
 </head> 
 <body>
@@ -189,20 +232,79 @@
             }
         }
 
-        // Only update the createAddonCard function
-        function createAddonCard(addon) {
-            return `
-                <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
-                    <div class="tooltip">${escapeHtml(addon.description || 'No description available')}</div>
-                    <div class="addon-title">${escapeHtml(addon.title)}</div>
-                    <div class="addon-meta">
-                        <span class="addon-version">v${escapeHtml(addon.version || '1.0.0')}</span>
-                        <span class="addon-downloads">${addon.downloads || 0}</span>
-                    </div>
-                </div>
-            `;
-        }
+// First add the new style for the installed badge
+const installedBadgeStyle = `
+    .installed-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #22c55e;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+`;
 
+// Add the style to the document
+const styleSheet = document.createElement("style");
+styleSheet.textContent = installedBadgeStyle;
+document.head.appendChild(styleSheet);
+
+// Modified createAddonCard function to check installation status
+async function createAddonCard(addon) {
+    try {
+        const encodedPackageName = encodeURIComponent(addon.title);
+        const response = await fetch(`http://localhost:3000/api/addons/${encodedPackageName}/status`);
+        
+        return `
+            <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
+                ${installed ? '<div class="installed-badge">Installed</div>' : ''}
+                <div class="tooltip">${escapeHtml(addon.description || 'No description available')}</div>
+                <div class="addon-title">${escapeHtml(addon.title)}</div>
+                <div class="addon-meta">
+                    <span class="addon-version">v${escapeHtml(addon.version || '1.0.0')}</span>
+                    <span class="addon-downloads"><span>${addon.downloads || 0}</span></span>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error checking addon installation status:', error);
+        return `
+            <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
+                <div class="tooltip">${escapeHtml(addon.description || 'No description available')}</div>
+                <div class="addon-title">${escapeHtml(addon.title)}</div>
+                <div class="addon-meta">
+                    <span class="addon-version">v${escapeHtml(addon.version || '1.0.0')}</span>
+                    <span class="addon-downloads"><span>${addon.downloads || 0}</span></span>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Modified updateAddons function to handle async card creation
+async function updateAddons() {
+    const query = searchInput.value.trim();
+    addonsGrid.innerHTML = '<div class="loading">Loading add-ons...</div>';
+    
+    const data = await fetchAddons(currentPage, query);
+    
+    if (data.addons.length === 0) {
+        addonsGrid.innerHTML = '<div class="no-results">No add-ons found</div>';
+        return;
+    }
+
+    // Create all addon cards and wait for them to complete
+    const cardPromises = data.addons.map(addon => createAddonCard(addon));
+    const cards = await Promise.all(cardPromises);
+    addonsGrid.innerHTML = cards.join('');
+
+    currentPage = data.currentPage;
+    totalPages = data.totalPages;
+    updatePaginationButtons();
+}
         function navigateToDetails(addonId) {
             // Use relative path and ensure the ID is properly passed
             window.location.href = `./addon-detail.html?id=${encodeURIComponent(addonId)}`;
@@ -215,26 +317,6 @@
                  .replace(/>/g, "&gt;")
                  .replace(/"/g, "&quot;")
                  .replace(/'/g, "&#039;");
-        }
-
-        async function updateAddons() {
-            const query = searchInput.value.trim();
-            addonsGrid.innerHTML = '<div class="loading">Loading add-ons...</div>';
-            
-            const data = await fetchAddons(currentPage, query);
-            
-            if (data.addons.length === 0) {
-                addonsGrid.innerHTML = '<div class="no-results">No add-ons found</div>';
-                return;
-            }
-
-            addonsGrid.innerHTML = data.addons
-                .map(addon => createAddonCard(addon))
-                .join('');
-
-            currentPage = data.currentPage;
-            totalPages = data.totalPages;
-            updatePaginationButtons();
         }
 
         function updatePaginationButtons() {

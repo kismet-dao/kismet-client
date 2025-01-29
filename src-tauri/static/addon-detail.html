@@ -36,6 +36,13 @@
             margin-bottom: 30px;
         }
 
+        .loader {
+            display: none; /* Hide loaders by default */
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
         .addon-image {
             width: 100%;
             height: 200px;
@@ -150,15 +157,20 @@
     <div id="app">
         <div class="addon-header">
             <button class="back-button" onclick="history.back()">← Back to Add-ons</button>
-            <div class="action-buttons">
+            <div class="action-container">
                 <button class="action-button install-button" id="installButton">Install</button>
-                <button class="action-button uninstall-button" id="uninstallButton" style="display: none;">Uninstall</button>
-                <div id="installLoader" style="display: none;">
+                <button class="action-button uninstall-button" id="uninstallButton">Uninstall</button>
+                <div class="loader" id="installLoader">
                     <span class="spinner"></span>
                     <span>Installing...</span>
                 </div>
+                <div class="loader" id="uninstallLoader">
+                    <span class="spinner"></span>
+                    <span>Uninstalling...</span>
+                </div>
             </div>
         </div>
+
 
         <div id="errorMessage" class="error-message"></div>
   
@@ -196,48 +208,47 @@
     </div>
 
     <script>
-        // Utility function to show error messages
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
+// Utility function to show error messages
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+// Fetch addon details from the API
+async function fetchAddonDetails(addonId) {
+    try {
+        const response = await fetch(`http://localhost:8082/api/addons/${addonId}`);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to load add-on details (Status: ${response.status})`);
         }
+        
+        const data = await response.json();
+        console.log('Fetched addon data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error fetching addon details:', error);
+        showError(error.message);
+        return null;
+    }
+}
 
-        // Fetch addon details from the API
-        async function fetchAddonDetails(addonId) {
-            try {
-                const response = await fetch(`http://localhost:8082/api/addons/${addonId}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to load add-on details (Status: ${response.status})`);
-                }
-                
-                const data = await response.json();
-                console.log('Fetched addon data:', data);
-                return data;
-            } catch (error) {
-                console.error('Error fetching addon details:', error);
-                showError(error.message);
-                return null;
-            }
+// Fetch addon installation status
+async function fetchAddonStatus(packageName) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/addons/${packageName}/status`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch addon status: ${response.status}`);
         }
+        const data = await response.json();
+        return data.installed;
+    } catch (error) {
+        console.error("Error fetching addon status:", error);
+        return false;
+    }
+}
 
-        async function fetchAddonStatus(packageName) {
-            try {
-                const response = await fetch(`http://localhost:3000/api/addons/${packageName}/status`);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch addon status: ${response.status}`);
-                }
-                const data = await response.json();
-                return data.installed; // Return true/false
-            } catch (error) {
-                console.error("Error fetching addon status:", error);
-                return false; // Default to not installed on error
-            }
-        }
-
-
-// Utility function to format date array
 function formatDateTime(dateArray) {
     if (!Array.isArray(dateArray) || dateArray.length !== 5) {
         return 'Unknown';
@@ -245,21 +256,60 @@ function formatDateTime(dateArray) {
     
     const [year, month, day, hour, minute] = dateArray;
     try {
-        const date = new Date(year, month - 1, day, hour, minute);
-        return date.toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric'
-        });
+        const formattedMonth = month.toString().padStart(2, '0');
+        const formattedDay = day.toString().padStart(2, '0');
+        const formattedHour = hour.toString().padStart(2, '0');
+        const formattedMinute = minute.toString().padStart(2, '0');
+        
+        return `${year}/${formattedMonth}/${formattedDay} ${formattedHour}:${formattedMinute}`;
     } catch (error) {
         console.error("Error formatting date:", error);
         return 'Unknown';
     }
 }
 
-// Main function to update addon details
+// Function to update UI based on installation status
+function updateUIState(isInstalled) {
+    const installButton = document.getElementById('installButton');
+    const uninstallButton = document.getElementById('uninstallButton');
+    const installLoader = document.getElementById('installLoader');
+    const uninstallLoader = document.getElementById('uninstallLoader');
+
+    // Reset all states first
+    installLoader.style.display = 'none';
+    uninstallLoader.style.display = 'none';
+
+    if (isInstalled) {
+        installButton.style.display = 'none';
+        uninstallButton.style.display = 'block';
+    } else {
+        installButton.style.display = 'block';
+        uninstallButton.style.display = 'none';
+    }
+}
+
+// Function to show loading state
+function showLoading(isInstalling) {
+    const installButton = document.getElementById('installButton');
+    const uninstallButton = document.getElementById('uninstallButton');
+    const installLoader = document.getElementById('installLoader');
+    const uninstallLoader = document.getElementById('uninstallLoader');
+
+    // Hide both buttons during any loading state
+    installButton.style.display = 'none';
+    uninstallButton.style.display = 'none';
+
+    // Show appropriate loader
+    if (isInstalling) {
+        installLoader.style.display = 'flex';
+        uninstallLoader.style.display = 'none';
+    } else {
+        installLoader.style.display = 'none';
+        uninstallLoader.style.display = 'flex';
+    }
+}
+
+// Update addon details and set initial state
 async function updateAddonDetails(data) {
     if (!data) return;
 
@@ -269,107 +319,95 @@ async function updateAddonDetails(data) {
     document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
     document.getElementById('addonDescription').textContent = data.description || 'No description available';
     
-    // Format and set the date
     const formattedDateTime = formatDateTime(data.updatedAt);
     document.getElementById('addonLastUpdate').textContent = formattedDateTime;
 
-    // Update install/uninstall button visibility
-    const installButton = document.getElementById('installButton');
-    const uninstallButton = document.getElementById('uninstallButton');
-    const packageName = document.getElementById('addonTitle').textContent;
-
-    const isInstalled = await fetchAddonStatus(packageName);
-    
-    installButton.style.display = isInstalled ? 'none' : 'block';
-    uninstallButton.style.display = isInstalled ? 'block' : 'none';
+    // Check initial installation status and update UI
+    const isInstalled = await fetchAddonStatus(data.title);
+    updateUIState(isInstalled);
 }
 
-        async function isInstalled(packageName) {
-            try {
-                const command = `npm ls ${packageName} --depth=0 --json`; // --depth=0 for top-level check, --json for parsing
-                const { stdout } = await execPromise(command, { maxBuffer: 1024 * 1024 });
-
-                // Try to parse the JSON output. If successful, the package is installed
-                JSON.parse(stdout);  // If the package is not found, npm ls will return an error, and JSON.parse will fail.
-
-                return true; // Package is installed
-
-            } catch (error) {
-                // If JSON parsing fails, it means the package is not installed or there was some other npm error.
-                return false; // Package is not installed
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const addonId = urlParams.get('id');
-            
-            if (!addonId) {
-                showError('No add-on ID provided');
-                return;
-            }
-
-            const addonData = await fetchAddonDetails(addonId);
-            if (addonData) {
-                updateAddonDetails(addonData);
-            }
-
-            document.getElementById('installButton').addEventListener('click', async () => {
-    const installButton = document.getElementById('installButton');
-    const uninstallButton = document.getElementById('uninstallButton');
-    const installLoader = document.getElementById('installLoader');
-    const packageName = document.getElementById('addonTitle').textContent; // Get the PACKAGE NAME
-
-    installButton.style.display = 'none';
-    installLoader.style.display = 'flex';
-    document.getElementById('errorMessage').style.display = 'none'; // Clear any previous errors
-
-    try {
-        const response = await fetch('http://localhost:3000/api/addons/install', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ addonId: packageName }) // Send the PACKAGE NAME (packageName)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json(); // Try to parse error from response
-            throw new Error(errorData.error || 'Installation request failed'); // or response.text()
-        }
-
-        const data = await response.json();
-        console.log(data.message); // Log the success message from the server
-        uninstallButton.style.display = 'block'; // Show uninstall button
-
-    } catch (error) {
-        console.error('Installation error:', error);
-        showError(error.message); // Display error to the user
-    } finally {
-        installLoader.style.display = 'none';
-        installButton.style.display = 'block';
+// Initialize page
+document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const addonId = urlParams.get('id');
+    
+    if (!addonId) {
+        showError('No add-on ID provided');
+        return;
     }
-});
 
-            // Setup uninstall button handler
-            document.getElementById('uninstallButton').addEventListener('click', async () => {
-                const installButton = document.getElementById('installButton');
-                const uninstallButton = document.getElementById('uninstallButton');
+    const addonData = await fetchAddonDetails(addonId);
+    if (addonData) {
+        await updateAddonDetails(addonData);
+    }
 
-                uninstallButton.disabled = true;
+    // Install button click handler
+    const installButton = document.getElementById('installButton');
+    installButton.addEventListener('click', async () => {
+        const packageName = document.getElementById('addonTitle').textContent;
+        
+        // Show loading state
+        showLoading(true);
+        document.getElementById('errorMessage').style.display = 'none';
 
-                const success = await uninstallAddon(addonId);
-                
-                if (success) {
-                    uninstallButton.style.display = 'none';
-                    installButton.style.display = 'block';
-                }
-                uninstallButton.disabled = false;
+        try {
+            const response = await fetch('http://localhost:3000/api/addons/install', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ addonId: packageName })
             });
-        });
-    </script>
-        <script src="js/main.js"></script>
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Installation request failed');
+            }
+
+            await response.json();
+            updateUIState(true); // Update UI to show uninstall button
+
+        } catch (error) {
+            console.error('Installation error:', error);
+            showError(error.message);
+            updateUIState(false); // Reset to install button on error
+        }
+    });
+
+    // Uninstall button click handler
+    const uninstallButton = document.getElementById('uninstallButton');
+    uninstallButton.addEventListener('click', async () => {
+        const packageName = document.getElementById('addonTitle').textContent;
+        
+        // Show loading state
+        showLoading(false);
+        document.getElementById('errorMessage').style.display = 'none';
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/addons/uninstall/${encodeURIComponent(packageName)}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Uninstallation failed');
+            }
+
+            await response.json();
+            updateUIState(false); // Update UI to show install button
+
+        } catch (error) {
+            console.error('Uninstallation error:', error);
+            showError(error.message);
+            updateUIState(true); // Reset to uninstall button on error
+        }
+    });
+});
+    </script>
+    <script src="js/main.js"></script>
 </body>
 </html>

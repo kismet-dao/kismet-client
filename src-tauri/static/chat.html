@@ -8,10 +8,36 @@
     <link rel="stylesheet" href="css/sidebar.css">
     <style>
         #current-model {
-            font-size: 14px;
+            position: sticky;
+            top: 0;
+            font-size: 12px;
             color: #666;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #ccc;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 10px;
         }
+
+        #model-select {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        #model-select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
         #chat {
             flex: 1;
             overflow-y: auto;
@@ -21,22 +47,14 @@
             background-color: #fff;
             display: flex;
             flex-direction: column;
-            position: relative; /* Make the chat area a positioning context */
+            position: relative;
         }
-        #current-model {
-            position: sticky; /* Stick to the top or bottom */
-            top: 0; /* Stick to the top */
-            font-size: 12px;
-            color: #666;
-            padding: 5px;
-            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
-            border-bottom: 1px solid #ccc; /* Add a separator */
-            z-index: 1; /* Ensure it stays above chat messages */
-        }
+
         #chat-input {
             display: flex;
             align-items: center;
         }
+
         #chat-input input {
             flex: 1;
             padding: 10px;
@@ -44,6 +62,7 @@
             border-radius: 4px;
             margin-right: 10px;
         }
+
         #chat-input button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -52,17 +71,39 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         #chat-input button:hover {
             background-color: #0056b3;
         }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+
+        .message.user {
+            background-color: #007bff;
+            color: #fff;
+            align-self: flex-end;
+        }
+
+        .message.ai {
+            background-color: #f0f0f0;
+            color: #333;
+            align-self: flex-start;
+        }
+
         .message.think {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border-left: 4px solid #4caf50;
-    padding: 10px;
-    margin: 10px 0;
-    font-style: italic;
-}
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+            padding: 10px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+
         /* File upload icon */
         #file-upload {
             display: none; /* Hide the default file input */
@@ -127,21 +168,19 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar will be injected here -->
     <div id="sidebar-container"></div>
 
-    <!-- Main Content -->
     <div id="app">
-        <!-- Current Model Display -->
         <div id="chat">
-            <!-- Current Model Display -->
             <div id="current-model">
-                Current Model: <span id="current-model-name">Loading...</span>
+                Current Model: 
+                <select id="model-select">
+                    <option value="">Loading models...</option>
+                </select>
             </div>
         </div>
         
         <div id="chat-input">
-            <!-- File upload icon -->
             <label for="file-upload" id="file-upload-label">📎</label>
             <input type="file" id="file-upload" accept=".txt,.pdf,.jpg,.png,.jpeg">
             <input type="text" id="chat-input-field" placeholder="Type your message here...">
@@ -149,11 +188,59 @@
         </div>
     </div>
 
-    <!-- Include chat.js -->
+    <script>
+        // Add this to your existing chat.js or include it here
+        async function loadModels() {
+            try {
+                const response = await fetch('http://localhost:3000/api/models');
+                const data = await response.json();
+                const modelSelect = document.getElementById('model-select');
+                modelSelect.innerHTML = '';
+                
+                data.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+
+                // Load and set current model
+                const currentModelResponse = await fetch('http://localhost:3000/api/current-model');
+                const currentModelData = await currentModelResponse.json();
+                modelSelect.value = currentModelData.model;
+            } catch (error) {
+                console.error('Error loading models:', error);
+            }
+        }
+
+        // Handle model switching
+        document.getElementById('model-select').addEventListener('change', async (event) => {
+            const newModel = event.target.value;
+            try {
+                const response = await fetch('http://localhost:3000/api/switch-model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ model: newModel }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to switch model');
+                }
+
+                // Add a system message to indicate model change
+                appendMessage('ai', `Switched to model: ${newModel}`);
+            } catch (error) {
+                console.error('Error switching model:', error);
+                appendMessage('ai', 'Failed to switch model');
+            }
+        });
+
+        // Load models when page loads
+        document.addEventListener('DOMContentLoaded', loadModels);
+    </script>
     <script src="js/chat.js"></script>
-    <!-- Include main.js (if needed) -->
     <script src="js/main.js"></script>
-</body>
-</html>
 </body>
 </html>

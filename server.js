@@ -10,7 +10,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import addonManager from './src/core/addon.js'; 
-import { fromArray, format } from 'date-fns'; // Import the functions
 
 const app = express();
 const port = 3000;
@@ -271,22 +270,6 @@ app.get('/api/models', async (req, res) => {
     }
 });
 
-app.post('/api/upload', async (req, res) => {
-    if (!req.files || !req.files.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    const file = req.files.file;
-    const filePath = `./uploads/${file.name}`;
-
-    try {
-        await file.mv(filePath); // Save the file
-        res.json({ message: 'File uploaded successfully', filePath });
-    } catch (error) {
-        console.error('Error uploading file:', error);
-        res.status(500).json({ error: 'Failed to upload file' });
-    }
-});
 
 // Switch model
 app.post('/api/switch-model', async (req, res) => {
@@ -305,6 +288,24 @@ app.post('/api/switch-model', async (req, res) => {
         res.status(500).json({ error: 'Failed to switch model' });
     }
 });
+
+app.post('/api/upload', async (req, res) => {
+    if (!req.files || !req.files.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const file = req.files.file;
+    const filePath = `./uploads/${file.name}`;
+
+    try {
+        await file.mv(filePath); // Save the file
+        res.json({ message: 'File uploaded successfully', filePath });
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        res.status(500).json({ error: 'Failed to upload file' });
+    }
+});
+
 
 // Endpoint to update API keys
 app.post('/api/update-keys', async (req, res) => {
@@ -414,35 +415,34 @@ function updateEnvVariable(envContent, key, value) {
     }
 }
 
-        // Format the date using date-fns
-        let formattedDate = null;
-        if (addon.updatedAt && addon.updatedAt.length === 7) {
-            try {
-                const dateArray = addon.updatedAt;
-                const date = fromArray(dateArray);
-                formattedDate = format(date, 'MMMM dd, yyyy HH:mm:ss'); // Customize the format as needed
-            } catch (dateError) {
-                console.error("Error formatting date:", dateError);
-            }
-        }
 
-        // Add the formatted date to the addon object
-        const addonWithFormattedDate = {
-            ...addon,
-            formattedUpdatedAt: formattedDate, // Add the formatted date
-        };
-
-        
-app.get('/api/addons/:packageName/status', async (req, res) => {
-    const { packageName } = req.params;
+// Replace the existing /api/addons/:packageName/status endpoint with this:
+app.get('/api/addons/:packageName*/status', async (req, res) => {
+    // Get the full package name from the URL, including scoped packages
+    const packageName = req.params.packageName + (req.params[0] || '');
+    
+    console.log(`Checking status for addon: ${packageName}`); // Debug log
 
     try {
-        const isInstalled = await addonManager.isInstalled(packageName);
-
-        res.json({ installed: isInstalled });
+        // Decode the package name in case it contains URL-encoded characters
+        const decodedPackageName = decodeURIComponent(packageName);
+        
+        // Check if addon is installed
+        const isInstalled = await addonManager.isInstalled(decodedPackageName);
+        
+        console.log(`Addon ${decodedPackageName} installed status:`, isInstalled); // Debug log
+        
+        res.json({ 
+            installed: isInstalled,
+            packageName: decodedPackageName 
+        });
     } catch (error) {
         console.error(`Error checking addon status for package: ${packageName}:`, error);
-        res.status(500).json({ error: `Failed to check addon status for package: ${packageName}` });
+        // Send a more specific error response rather than 404
+        res.status(500).json({ 
+            error: `Failed to check addon status for package: ${packageName}`,
+            details: error.message
+        });
     }
 });
 
@@ -466,13 +466,19 @@ app.post('/api/addons/install', async (req, res) => {
     }
 });
 
-app.delete('/api/addons/uninstall/:id', async (req, res) => {
-    const { id } = req.params;
+// Server-side endpoint (Express)
+app.delete('/api/addons/uninstall/:packageName*', async (req, res) => {
+    // Get the full package name from the URL, including scoped packages
+    const packageName = req.params.packageName + (req.params[0] || '');
+    
+    if (!packageName) {
+        return res.status(400).json({ error: 'Package name is required' });
+    }
 
     try {
-        console.log(`Uninstalling addon: ${id}`);
-        await addonManager.uninstall(id);
-        res.json({ success: true, message: `Addon ${id} uninstalled successfully` });
+        console.log(`Uninstalling addon: ${packageName}`);
+        await addonManager.uninstall(packageName);
+        res.json({ success: true, message: `Addon ${packageName} uninstalled successfully` });
     } catch (error) {
         console.error('Addon uninstallation error:', error);
         res.status(500).json({ error: 'Failed to uninstall addon', details: error.message });
