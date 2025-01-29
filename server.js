@@ -9,6 +9,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import addonManager from './src/core/addon.js'; 
 
 const app = express();
 const port = 3000;
@@ -412,27 +413,51 @@ function updateEnvVariable(envContent, key, value) {
     }
 }
 
-// Add to your existing Express server
+app.get('/api/addons/:packageName/status', async (req, res) => {
+    const { packageName } = req.params;
+
+    try {
+        const isInstalled = await addonManager.isInstalled(packageName);
+
+        res.json({ installed: isInstalled });
+    } catch (error) {
+        console.error(`Error checking addon status for package: ${packageName}:`, error);
+        res.status(500).json({ error: `Failed to check addon status for package: ${packageName}` });
+    }
+});
+
 app.post('/api/addons/install', async (req, res) => {
     const { addonId } = req.body;
-    try {
-      await addonManager.install(addonId);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to install add-on' });
+
+    if (!addonId) {
+        return res.status(400).json({ error: 'Addon ID is required' });
     }
-  });
-  
-  app.delete('/api/addons/uninstall/:id', async (req, res) => {
+
+    try {
+        console.log(`Installing addon: ${addonId}`);
+
+        await addonManager.install(addonId);
+
+        res.json({ success: true, message: `Addon ${addonId} installed successfully` });
+
+    } catch (error) {
+        console.error('Addon installation error:', error);
+        res.status(500).json({ error: 'Failed to install addon', details: error.message }); 
+    }
+});
+
+app.delete('/api/addons/uninstall/:id', async (req, res) => {
     const { id } = req.params;
+
     try {
-      await addonManager.uninstall(id);
-      res.json({ success: true });
+        console.log(`Uninstalling addon: ${id}`);
+        await addonManager.uninstall(id);
+        res.json({ success: true, message: `Addon ${id} uninstalled successfully` });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to uninstall add-on' });
+        console.error('Addon uninstallation error:', error);
+        res.status(500).json({ error: 'Failed to uninstall addon', details: error.message });
     }
-  });
-  
+});
 
 // Update the restart endpoint
 app.post('/api/server/restart', async (req, res) => {

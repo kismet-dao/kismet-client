@@ -4,9 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add-on Details - Kismet CLI Slim</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/sidebar.css">
     <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        #app {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
         .addon-header {
             display: flex;
             justify-content: space-between;
@@ -15,12 +29,17 @@
         }
 
         .back-button {
-            padding: 8px 0px;
+            padding: 8px 16px;
             cursor: pointer;
             background: #f0f0f0;
             border: none;
             border-radius: 4px;
             font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover {
+            background: #e0e0e0;
         }
 
         .addon-info {
@@ -28,12 +47,13 @@
             grid-template-columns: 300px 1fr;
             gap: 30px;
             align-items: start;
+            margin-bottom: 30px;
         }
 
         .addon-image {
             width: 100%;
             height: 200px;
-            background: #b2b1b1;
+            background: #f0f0f0;
             border-radius: 8px;
             overflow: hidden;
         }
@@ -45,31 +65,38 @@
         }
 
         .addon-metadata {
-            display: grid;
+            display: flex;
+            flex-direction: column;
             gap: 15px;
-            height: 200px;
-            overflow-y: auto;
-            margin-bottom: 20px;
         }
 
         .addon-metadata h1 {
-            margin: 0; /* Remove default margin from title */
-            padding: 0; /* Remove any default padding */
-            line-height: 1.2; /* Adjust line height for better spacing */
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+            color: #333;
         }
 
         .metadata-item {
             display: flex;
             gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
         }
 
         .metadata-label {
             font-weight: bold;
             min-width: 120px;
+            color: #666;
         }
 
         .description {
             margin-bottom: 30px;
+        }
+
+        .description h2 {
+            color: #333;
+            margin-bottom: 15px;
         }
 
         .action-buttons {
@@ -82,6 +109,12 @@
             border-radius: 4px;
             border: none;
             cursor: pointer;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .action-button:hover {
+            opacity: 0.9;
         }
 
         .install-button {
@@ -93,13 +126,39 @@
             background: #f44336;
             color: white;
         }
+
+        #installLoader {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #f44336;
+            padding: 20px;
+            background: #ffebee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Sidebar will be injected here -->
-    <div id="sidebar-container"></div>
-
-    <!-- Main Content -->
     <div id="app">
         <div class="addon-header">
             <button class="back-button" onclick="history.back()">← Back to Add-ons</button>
@@ -112,6 +171,8 @@
                 </div>
             </div>
         </div>
+
+        <div id="errorMessage" class="error-message"></div>
   
         <div class="addon-detail-container">
             <div class="addon-info">
@@ -119,74 +180,112 @@
                     <img src="/api/placeholder/300/200" alt="Add-on placeholder image">
                 </div>
                 <div class="addon-metadata">
-                    <h1 id="addonTitle">Add-on Title</h1>
+                    <h1 id="addonTitle">Loading...</h1>
                     <div class="metadata-item">
                         <span class="metadata-label">Version:</span>
-                        <span id="addonVersion">1.0.0</span>
+                        <span id="addonVersion">-</span>
                     </div>
                     <div class="metadata-item">
                         <span class="metadata-label">Author:</span>
-                        <span id="addonAuthor">Author Name</span>
+                        <span id="addonAuthor">-</span>
                     </div>
                     <div class="metadata-item">
                         <span class="metadata-label">Last Updated:</span>
-                        <span id="addonLastUpdate">January 1, 2024</span>
+                        <span id="addonLastUpdate">-</span>
                     </div>
                     <div class="metadata-item">
                         <span class="metadata-label">Downloads:</span>
-                        <span id="addonDownloads">1,234</span>
-                    </div>
-                    <div class="metadata-item">
-                        <span class="metadata-label">Version:</span>
-                        <span id="addonVersion">1.0.0</span>
-                    </div>
-                    <div class="metadata-item">
-                        <span class="metadata-label">Author:</span>
-                        <span id="addonAuthor">Author Name</span>
-                    </div>
-                    <div class="metadata-item">
-                        <span class="metadata-label">Last Updated:</span>
-                        <span id="addonLastUpdate">January 1, 2024</span>
-                    </div>
-                    <div class="metadata-item">
-                        <span class="metadata-label">Downloads:</span>
-                        <span id="addonDownloads">1,234</span>
+                        <span id="addonDownloads">-</span>
                     </div>
                 </div>
             </div>
 
             <div class="description">
                 <h2>Description</h2>
-                <p id="addonDescription">Loading add-on description...</p>
+                <p id="addonDescription">Loading...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Get the add-on ID from URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const addonId = urlParams.get('id');
+        // Utility function to show error messages
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
 
-        // Simulate fetching add-on data
-        const mockAddonData = {
-            title: `Add-on ${addonId}`,
-            version: '1.0.0',
-            author: 'John Doe',
-            lastUpdate: 'January 28, 2024',
-            downloads: '1,234',
-            description: 'This is a detailed description of the add-on. It includes information about its features, functionality, and usage instructions.',
-            installed: false
-        };
+        // Fetch addon details from the API
+        async function fetchAddonDetails(addonId) {
+            try {
+                const response = await fetch(`http://localhost:8082/api/addons/${addonId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load add-on details (Status: ${response.status})`);
+                }
+                
+                const data = await response.json();
+                console.log('Fetched addon data:', data);
+                return data;
+            } catch (error) {
+                console.error('Error fetching addon details:', error);
+                showError(error.message);
+                return null;
+            }
+        }
+        
+        async function fetchAddonStatus(packageName) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/addons/${packageName}/status`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch addon status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.installed; // Return true/false
+            } catch (error) {
+                console.error("Error fetching addon status:", error);
+                return false; // Default to not installed on error
+            }
+        }
 
-        // Update the UI with add-on data
+
+        // Update the UI with addon details and install/uninstall button visibility
+        async function updateAddonDetails(data) {
+            if (!data) return;
+
+            document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
+            document.getElementById('addonVersion').textContent = data.version || '1.0.0';
+            document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
+            document.getElementById('addonLastUpdate').textContent = data.lastUpdate || 'Unknown';
+            document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
+            document.getElementById('addonDescription').textContent = data.description || 'No description available';
+
+            const installButton = document.getElementById('installButton');
+            const uninstallButton = document.getElementById('uninstallButton');
+            const packageName = document.getElementById('addonTitle').textContent; // Get package name
+
+            const isInstalled = await fetchAddonStatus(packageName);
+
+            if (isInstalled) {
+                installButton.style.display = 'none';
+                uninstallButton.style.display = 'block';
+            } else {
+                installButton.style.display = 'block';
+                uninstallButton.style.display = 'none';
+            }
+        }
+
+        // Update the UI with addon details
         function updateAddonDetails(data) {
-            document.getElementById('addonTitle').textContent = data.title;
-            document.getElementById('addonVersion').textContent = data.version;
-            document.getElementById('addonAuthor').textContent = data.author;
-            document.getElementById('addonLastUpdate').textContent = data.lastUpdate;
-            document.getElementById('addonDownloads').textContent = data.downloads;
-            document.getElementById('addonDescription').textContent = data.description;
-            
+            if (!data) return;
+
+            document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
+            document.getElementById('addonVersion').textContent = data.version || '1.0.0';
+            document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
+            document.getElementById('addonLastUpdate').textContent = data.lastUpdate || 'Unknown';
+            document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
+            document.getElementById('addonDescription').textContent = data.description || 'No description available';
+
             // Update install/uninstall button visibility
             const installButton = document.getElementById('installButton');
             const uninstallButton = document.getElementById('uninstallButton');
@@ -200,55 +299,90 @@
             }
         }
 
-        // Handle install button click
-        document.getElementById('installButton').addEventListener('click', function() {
-            // Simulate installation
-            mockAddonData.installed = true;
-            updateAddonDetails(mockAddonData);
-            alert('Add-on installed successfully!');
-        });
+        async function isInstalled(packageName) {
+            try {
+                const command = `npm ls ${packageName} --depth=0 --json`; // --depth=0 for top-level check, --json for parsing
+                const { stdout } = await execPromise(command, { maxBuffer: 1024 * 1024 });
 
-        // Handle uninstall button click
-        document.getElementById('uninstallButton').addEventListener('click', function() {
-            // Simulate uninstallation
-            mockAddonData.installed = false;
-            updateAddonDetails(mockAddonData);
-            alert('Add-on uninstalled successfully!');
-        });
+                // Try to parse the JSON output. If successful, the package is installed
+                JSON.parse(stdout);  // If the package is not found, npm ls will return an error, and JSON.parse will fail.
 
-        // Initialize page with mock data
-        if (addonId) {
-            updateAddonDetails(mockAddonData);
-        } else {
-            alert('No add-on ID provided!');
-            history.back();
+                return true; // Package is installed
+
+            } catch (error) {
+                // If JSON parsing fails, it means the package is not installed or there was some other npm error.
+                return false; // Package is not installed
+            }
         }
 
-        // Handle install button click
-document.getElementById('installButton').addEventListener('click', function() {
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const addonId = urlParams.get('id');
+            
+            if (!addonId) {
+                showError('No add-on ID provided');
+                return;
+            }
+
+            const addonData = await fetchAddonDetails(addonId);
+            if (addonData) {
+                updateAddonDetails(addonData);
+            }
+
+            document.getElementById('installButton').addEventListener('click', async () => {
     const installButton = document.getElementById('installButton');
     const uninstallButton = document.getElementById('uninstallButton');
     const installLoader = document.getElementById('installLoader');
+    const packageName = document.getElementById('addonTitle').textContent; // Get the PACKAGE NAME
 
-    // Hide the Install and Uninstall buttons, show the spinner and "Installing..." message
     installButton.style.display = 'none';
-    uninstallButton.style.display = 'none'; // Hide the Uninstall button during installation
     installLoader.style.display = 'flex';
+    document.getElementById('errorMessage').style.display = 'none'; // Clear any previous errors
 
-    // Simulate installation delay (e.g., 3 seconds)
-    setTimeout(() => {
-        // Update the mock data to reflect installation
-        mockAddonData.installed = true;
-        updateAddonDetails(mockAddonData);
+    try {
+        const response = await fetch('http://localhost:3000/api/addons/install', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ addonId: packageName }) // Send the PACKAGE NAME (packageName)
+        });
 
-        // Hide the spinner and show the Uninstall button
+        if (!response.ok) {
+            const errorData = await response.json(); // Try to parse error from response
+            throw new Error(errorData.error || 'Installation request failed'); // or response.text()
+        }
+
+        const data = await response.json();
+        console.log(data.message); // Log the success message from the server
+        uninstallButton.style.display = 'block'; // Show uninstall button
+
+    } catch (error) {
+        console.error('Installation error:', error);
+        showError(error.message); // Display error to the user
+    } finally {
         installLoader.style.display = 'none';
-        uninstallButton.style.display = 'block'; // Show the Uninstall button after installation
-
-        alert('Add-on installed successfully!');
-    }, 3000); // Simulate a 3-second installation process
+        installButton.style.display = 'block';
+    }
 });
+
+            // Setup uninstall button handler
+            document.getElementById('uninstallButton').addEventListener('click', async () => {
+                const installButton = document.getElementById('installButton');
+                const uninstallButton = document.getElementById('uninstallButton');
+
+                uninstallButton.disabled = true;
+
+                const success = await uninstallAddon(addonId);
+                
+                if (success) {
+                    uninstallButton.style.display = 'none';
+                    installButton.style.display = 'block';
+                }
+                uninstallButton.disabled = false;
+            });
+        });
     </script>
-    <script src="js/main.js"></script>
 </body>
 </html>

@@ -8,84 +8,144 @@
     <link rel="stylesheet" href="css/sidebar.css">
 </head>
 <body>
-    <!-- Sidebar will be injected here -->
     <div id="sidebar-container"></div>
 
-    <!-- Main Content -->
     <div id="app">
         <div class="header">
             <h1>Add-ons</h1>     
         </div>
   
-        <input type="text" class="search-bar" placeholder="Search add-ons...">
+        <input type="text" id="search-input" class="search-bar" placeholder="Search add-ons...">
         <div class="addons-grid" id="addons-grid">
             <!-- Add-on items will be dynamically inserted here -->
         </div>
-        <!-- Pagination Controls -->
         <div class="pagination">
             <button id="prev-page" disabled>Previous</button>
+            <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
             <button id="next-page">Next</button>
         </div>
     </div>
 
     <script>
-        // Pagination Logic
-        const itemsPerPage = 20;
-        const itemsPerRow = 6;
-        const totalItems = 36; // Total number of add-ons
         let currentPage = 1;
+        let itemsPerPage = 20;
+        let totalPages = 1;
+        let searchTimeout;
 
         const addonsGrid = document.getElementById('addons-grid');
-        const prevPageButton = document.getElementById('prev-page');
-        const nextPageButton = document.getElementById('next-page');
+        const searchInput = document.getElementById('search-input');
+        const prevButton = document.getElementById('prev-page');
+        const nextButton = document.getElementById('next-page');
+        const currentPageSpan = document.getElementById('current-page');
+        const totalPagesSpan = document.getElementById('total-pages');
 
-        // Function to handle add-on click
-        function handleAddonClick(addonId) {
-            window.location.href = `addon-detail.html?id=${addonId}`;
-        }
+        async function fetchAddons(page = 1, query = '') {
+            try {
+                const url = new URL('http://localhost:8082/api/addons'); 
+                url.searchParams.append('page', page);
+                url.searchParams.append('size', itemsPerPage);
+                if (query) {
+                    url.searchParams.append('query', query);
+                }
 
-        // Function to generate add-on items
-        function generateAddons(startIndex, endIndex) {
-            addonsGrid.innerHTML = ''; // Clear the grid
-            for (let i = startIndex; i < endIndex; i++) {
-                const addonItem = document.createElement('div');
-                addonItem.className = 'addon-item';
-                addonItem.textContent = `Add-on ${i + 1}`;
-                // Make the item clickable and pass the addon ID
-                addonItem.style.cursor = 'pointer';
-                addonItem.addEventListener('click', () => handleAddonClick(i + 1));
-                addonsGrid.appendChild(addonItem);
+                const response = await fetch(url.toString());
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Received data:', data); // Debug log
+                return {
+                    addons: data.addons || [],
+                    currentPage: data.currentPage || 1,
+                    totalPages: data.totalPages || 1
+                };
+            } catch (error) {
+                console.error('Error fetching addons:', error);
+                return { addons: [], currentPage: 1, totalPages: 1 };
             }
         }
 
-        // Function to update pagination
-        function updatePagination() {
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-            generateAddons(startIndex, endIndex);
+        function createAddonCard(addon) {
+    return `
+        <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
+            <div class="addon-title">${escapeHtml(addon.title)}</div>
+            <div class="addon-description">${escapeHtml(addon.description || 'No description available')}</div>
+            <div class="addon-meta">
+                <span>v${escapeHtml(addon.version || '1.0.0')}</span>
+                <span>${addon.downloads || 0} downloads</span>
+            </div>
+        </div>
+    `;
+}
 
-            // Enable/disable pagination buttons
-            prevPageButton.disabled = currentPage === 1;
-            nextPageButton.disabled = endIndex >= totalItems;
+// In addons.html, update the navigateToDetails function
+function navigateToDetails(addonId) {
+    // Use relative path and ensure the ID is properly passed
+    window.location.href = `./addon-detail.html?id=${encodeURIComponent(addonId)}`;
+}
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
         }
 
-        // Event listeners for pagination buttons
-        prevPageButton.addEventListener('click', () => {
+        async function updateAddons() {
+            const query = searchInput.value.trim();
+            addonsGrid.innerHTML = '<div class="loading">Loading add-ons...</div>';
+            
+            const data = await fetchAddons(currentPage, query);
+            
+            if (data.addons.length === 0) {
+                addonsGrid.innerHTML = '<div class="no-results">No add-ons found</div>';
+                return;
+            }
+
+            addonsGrid.innerHTML = data.addons
+                .map(addon => createAddonCard(addon))
+                .join('');
+
+            currentPage = data.currentPage;
+            totalPages = data.totalPages;
+            updatePaginationButtons();
+        }
+
+        function updatePaginationButtons() {
+            prevButton.disabled = currentPage === 1;
+            nextButton.disabled = currentPage >= totalPages;
+            currentPageSpan.textContent = currentPage;
+            totalPagesSpan.textContent = totalPages;
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                updateAddons();
+            }, 300);
+        });
+
+        prevButton.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
-                updatePagination();
+                updateAddons();
             }
         });
 
-        nextPageButton.addEventListener('click', () => {
-            if (currentPage * itemsPerPage < totalItems) {
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
                 currentPage++;
-                updatePagination();
+                updateAddons();
             }
         });
 
-        // Initialize the first page
-        updatePagination();
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAddons();
+        });
     </script>
     <script src="js/main.js"></script>
 </body>

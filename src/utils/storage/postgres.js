@@ -2,14 +2,13 @@ import pg from 'pg';
 import { logger } from '../logger.js';
 import { DatabaseMigrationService } from '../../core/services/database.js';
 import { config } from 'dotenv';
+import { handleDatabaseConnectionError, validateDatabaseConfig } from '../../errors/databaseErrorHandler.js';
+
 // Initialize dotenv
 config();
 
 const { Pool } = pg;
 
-/**
- * Utility class for managing PostgreSQL storage operations
- */
 export class PostgresStorageManager {
     constructor(config = {}) {
         this.config = {
@@ -20,14 +19,17 @@ export class PostgresStorageManager {
             port: parseInt(config.port || process.env.POSTGRES_PORT || '5432', 10)
         };
 
-        this.pool = new Pool(this.config);
-        this.poolEnded = false; // Track if pool is closed
-        this.migrationService = new DatabaseMigrationService(this.config);
+        // Validate configuration before creating pool
+        try {
+            validateDatabaseConfig(this.config);
+            this.pool = new Pool(this.config);
+            this.poolEnded = false;
+            this.migrationService = new DatabaseMigrationService(this.config);
+        } catch (error) {
+            handleDatabaseConnectionError(error);
+        }
     }
 
-    /**
-     * Initialize the database connection and run migrations
-     */
     async initialize() {
         try {
             await this.migrationService.initialize();
@@ -36,11 +38,9 @@ export class PostgresStorageManager {
             
             logger.info('✅ PostgreSQL storage manager initialized successfully');
         } catch (error) {
-            logger.error('❌ PostgreSQL initialization failed:', error);
-            throw error;
+            handleDatabaseConnectionError(error);
         }
     }
-
     /**
  * Get all memories with their metadata
  */
@@ -84,8 +84,7 @@ async getAllMemoriesWithMetadata() {
             await client.query('SELECT NOW()');
             logger.info('✅ PostgreSQL connection test successful');
         } catch (error) {
-            logger.error('❌ PostgreSQL connection test failed:', error);
-            throw error;
+            handleDatabaseConnectionError(error);
         } finally {
             client.release();
         }
