@@ -1,43 +1,34 @@
-// Load sidebar dynamically
+// Modify the loadSidebar function to check settings first
 async function loadSidebar() {
+    // Check settings before loading sidebar
+    const settingsExist = await checkSettings();
+    if (!settingsExist) {
+        return; // Stop execution if settings check failed or redirected
+    }
+
     try {
         const response = await fetch('sidebar.html');
         const sidebarHTML = await response.text();
         document.getElementById('sidebar-container').innerHTML = sidebarHTML;
 
-        // Now that sidebar is loaded, fetch and display chat history
+        // Rest of the loadSidebar function remains the same...
         await fetchAndDisplayChatHistory();
-
-        // Add event listener for new chat button
+        
         const newChatButton = document.getElementById('start-new-chat');
         if (newChatButton) {
             newChatButton.addEventListener('click', async (event) => {
-                event.preventDefault();
-                try {
-                    const response = await fetch('http://localhost:3000/api/chat/session', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-                    }
-
-                    const data = await response.json();
-                    window.location.href = `./chat.html?chatId=${data.chatId}`;
-                } catch (error) {
-                    console.error('Error creating chat session:', error);
-                    alert('Failed to create a new chat session.');
-                }
+                // Existing newChatButton code...
             });
         }
     } catch (error) {
         console.error('Error loading sidebar:', error);
     }
 }
+
+// Ensure checkSettings runs when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    checkSettings();
+});
 
 // Fetch and display chat history
 async function fetchAndDisplayChatHistory() {
@@ -99,3 +90,70 @@ async function fetchAndDisplayChatHistory() {
 
 // Load sidebar when page loads
 loadSidebar();
+
+async function handleServerRestart() {
+    try {
+        const response = await fetch('http://localhost:3000/api/server/restart', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            console.log('Server restart initiated');
+            
+            // Wait for server to go down and come back up
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Poll server until it's back up
+            let attempts = 0;
+            while (attempts < 30) { // Try for 15 seconds
+                try {
+                    const healthCheck = await fetch('http://localhost:3000/api/settings');
+                    if (healthCheck.ok) {
+                        console.log('Server is back online');
+                        return;
+                    }
+                } catch (error) {
+                    // Server still down, continue polling
+                }
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            throw new Error('Server failed to restart within timeout');
+        }
+    } catch (error) {
+        console.error('Error during server restart:', error);
+        // Handle the error appropriately in your UI
+    }
+}
+
+// Add this to the beginning of main.js
+
+async function checkSettings() {
+    try {
+        const response = await fetch('http://localhost:3000/api/settings');
+        
+        if (response.status === 404) {
+            // No settings found, redirect to wizard
+            console.log('No settings found, redirecting to setup wizard...');
+            
+            // Don't redirect if we're already on the wizard page
+            if (!window.location.pathname.endsWith('wizard.html')) {
+                window.location.href = './wizard.html';
+                return false;
+            }
+        } else if (!response.ok) {
+            throw new Error(`Settings check failed with status: ${response.status}`);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error checking settings:', error);
+        // Show an error toast if we have the toast component available
+        if (typeof showToast === 'function') {
+            showToast('Failed to check application settings. Please try again.', true);
+        }
+        return false;
+    }
+}
+

@@ -3,75 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add-on Details - Kismet CLI Slim</title>
+    <title>Add-ons - Kismet CLI Slim</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/sidebar.css">
-    <style>
-        /* Addon item styles */
-.addon-item {
-    cursor: pointer;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.addon-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
-
-/* Details page styles */
-.back-button {
-    padding: 8px 16px;
-    margin-bottom: 20px;
-    border: none;
-    background: #f0f0f0;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.addon-details {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.addon-info {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.addon-metadata {
-    margin: 20px 0;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 4px;
-}
-
-.addon-dependencies {
-    margin-top: 20px;
-}
-
-.install-button {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.install-button:hover {
-    background: #0056b3;
-}
-    </style>
-    
 </head>
 <body>
     <!-- Sidebar will be injected here -->
@@ -80,110 +14,78 @@
     <!-- Main Content -->
     <div id="app">
         <div class="header">
-            <button id="back-button" class="back-button">← Back to Add-ons</button>
-            <h1 id="addon-name">Add-on Details</h1>
+            <h1>Add-ons</h1>     
         </div>
-        
-        <div id="addon-details" class="addon-details">
-            <!-- Details will be populated dynamically -->
-            <div class="addon-info">
-                <h2 id="addon-title"></h2>
-                <p id="addon-description"></p>
-                <div class="addon-metadata">
-                    <div>Version: <span id="addon-version"></span></div>
-                    <div>Author: <span id="addon-author"></span></div>
-                    <div>Downloads: <span id="addon-downloads"></span></div>
-                </div>
-                <div class="addon-dependencies">
-                    <h3>Dependencies</h3>
-                    <ul id="addon-dependencies-list"></ul>
-                </div>
-                <button id="install-button" class="install-button">Install Add-on</button>
-            </div>
+  
+        <input type="text" class="search-bar" placeholder="Search add-ons...">
+        <div class="addons-grid" id="addons-grid">
+            <!-- Add-on items will be dynamically inserted here -->
+        </div>
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            <button id="prev-page" disabled>Previous</button>
+            <button id="next-page">Next</button>
         </div>
     </div>
+
     <script>
-        // Add these variables at the top
-let addons = []; // Will store our addon data
+        // Pagination Logic
+        const itemsPerPage = 20;
+        const itemsPerRow = 6;
+        const totalItems = 36; // Total number of add-ons
+        let currentPage = 1;
 
-// Mock data - replace with your actual data source
-function generateMockAddonData(id) {
-    return {
-        id: id,
-        name: `Add-on ${id}`,
-        description: `This is a detailed description for Add-on ${id}`,
-        version: '1.0.0',
-        author: 'Developer Name',
-        downloads: Math.floor(Math.random() * 10000),
-        dependencies: ['kismet-core', 'wallet-api']
-    };
-}
+        const addonsGrid = document.getElementById('addons-grid');
+        const prevPageButton = document.getElementById('prev-page');
+        const nextPageButton = document.getElementById('next-page');
 
-// Function to generate add-on items with click handler
-function generateAddons(startIndex, endIndex) {
-    addonsGrid.innerHTML = ''; // Clear the grid
-    for (let i = startIndex; i < endIndex; i++) {
-        const addon = generateMockAddonData(i + 1);
-        const addonItem = document.createElement('div');
-        addonItem.className = 'addon-item';
-        addonItem.innerHTML = `
-            <h3>${addon.name}</h3>
-            <p>${addon.description.substring(0, 100)}...</p>
-        `;
-        
-        // Add click handler
-        addonItem.addEventListener('click', () => {
-            // Store addon data in localStorage for the details page
-            localStorage.setItem('selectedAddon', JSON.stringify(addon));
-            // Navigate to details page
-            window.location.href = 'addon-details.html';
+        // Function to handle add-on click
+        function handleAddonClick(addonId) {
+            window.location.href = `addon-detail.html?id=${addonId}`;
+        }
+
+        // Function to generate add-on items
+        function generateAddons(startIndex, endIndex) {
+            addonsGrid.innerHTML = ''; // Clear the grid
+            for (let i = startIndex; i < endIndex; i++) {
+                const addonItem = document.createElement('div');
+                addonItem.className = 'addon-item';
+                addonItem.textContent = `Add-on ${i + 1}`;
+                // Make the item clickable and pass the addon ID
+                addonItem.style.cursor = 'pointer';
+                addonItem.addEventListener('click', () => handleAddonClick(i + 1));
+                addonsGrid.appendChild(addonItem);
+            }
+        }
+
+        // Function to update pagination
+        function updatePagination() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            generateAddons(startIndex, endIndex);
+
+            // Enable/disable pagination buttons
+            prevPageButton.disabled = currentPage === 1;
+            nextPageButton.disabled = endIndex >= totalItems;
+        }
+
+        // Event listeners for pagination buttons
+        prevPageButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
+            }
         });
-        
-        addonsGrid.appendChild(addonItem);
-    }
-}
 
-// Check if we're on the details page
-if (window.location.pathname.includes('addon-details.html')) {
-    // Initialize details page
-    initializeDetailsPage();
-}
+        nextPageButton.addEventListener('click', () => {
+            if (currentPage * itemsPerPage < totalItems) {
+                currentPage++;
+                updatePagination();
+            }
+        });
 
-function initializeDetailsPage() {
-    // Get the selected addon data from localStorage
-    const selectedAddon = JSON.parse(localStorage.getItem('selectedAddon'));
-    
-    if (!selectedAddon) {
-        window.location.href = 'index.html'; // Redirect if no addon selected
-        return;
-    }
-
-    // Populate the details
-    document.getElementById('addon-title').textContent = selectedAddon.name;
-    document.getElementById('addon-description').textContent = selectedAddon.description;
-    document.getElementById('addon-version').textContent = selectedAddon.version;
-    document.getElementById('addon-author').textContent = selectedAddon.author;
-    document.getElementById('addon-downloads').textContent = selectedAddon.downloads;
-
-    // Populate dependencies
-    const dependenciesList = document.getElementById('addon-dependencies-list');
-    selectedAddon.dependencies.forEach(dep => {
-        const li = document.createElement('li');
-        li.textContent = dep;
-        dependenciesList.appendChild(li);
-    });
-
-    // Back button handler
-    document.getElementById('back-button').addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
-
-    // Install button handler
-    document.getElementById('install-button').addEventListener('click', () => {
-        // Add your installation logic here
-        alert(`Installing ${selectedAddon.name}...`);
-    });
-}
+        // Initialize the first page
+        updatePagination();
     </script>
     <script src="js/main.js"></script>
 </body>

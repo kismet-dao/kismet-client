@@ -7,107 +7,82 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+        /* Existing styles remain the same */
+        
+        /* Server Restart Button Styles */
+        .server-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
         }
 
-        /* Main Content Styles */
-        #app {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        /* Carousel Styles */
-        .carousel {
-            width: 100%;
-            overflow: hidden;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            position: relative;
-            margin-bottom: 40px;
-        }
-
-        .carousel-inner {
-            display: flex;
-            transition: transform 0.5s ease-in-out;
-        }
-
-        .carousel-item {
-            min-width: 100%;
-            box-sizing: border-box;
-        }
-
-        .carousel-item img {
-            width: 100%;
-            display: block;
-        }
-
-        .carousel-control {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
+        .restart-button {
+            background-color: #2c3e50;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px 24px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 24px;
-            z-index: 1;
-        }
-
-        .carousel-control.prev {
-            left: 10px;
-        }
-
-        .carousel-control.next {
-            right: 10px;
-        }
-
-        /* Sections Styles */
-        .sections-horizontal {
-            width: 100%;
-            height: 600px;
+            font-size: 14px;
             display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            gap: 20px; /* Spacing between sections */
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
         }
 
-        .sections {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 20px; /* Spacing between sections */
+        .restart-button:hover {
+            background-color: #34495e;
+            transform: translateY(-1px);
         }
 
-        .section {
-            padding: 20px;
-            text-align: left;
+        .restart-button:active {
+            transform: translateY(1px);
         }
 
-        .section h2 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 24px;
-            color: #2c3e50;
+        .restart-button.loading {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
         }
 
-        .section p {
-            color: #666;
-            margin: 0;
-            line-height: 1.6;
+        .restart-button .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            display: none;
+            animation: spin 1s linear infinite;
+        }
+
+        .restart-button.loading .spinner {
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 6px;
+            background-color: #2ecc71;
+            color: white;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-toast.error {
+            background-color: #e74c3c;
         }
     </style>
 </head>
@@ -115,8 +90,83 @@
     <!-- Sidebar -->
     <div id="sidebar-container"></div>
 
+    <!-- Server Controls -->
+    <div class="server-controls">
+        <button id="restartButton" class="restart-button">
+            <span class="spinner"></span>
+            <span class="button-text">Restart Server</span>
+        </button>
+    </div>
+
+    <!-- Status Toast -->
+    <div id="statusToast" class="status-toast"></div>
+
     <!-- Main Content -->
     <div id="app"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const restartButton = document.getElementById('restartButton');
+            const statusToast = document.getElementById('statusToast');
+
+            function showToast(message, isError = false) {
+                statusToast.textContent = message;
+                statusToast.classList.toggle('error', isError);
+                statusToast.classList.add('show');
+                setTimeout(() => {
+                    statusToast.classList.remove('show');
+                }, 3000);
+            }
+
+            async function restartServer() {
+                if (restartButton.classList.contains('loading')) return;
+
+                restartButton.classList.add('loading');
+                restartButton.querySelector('.button-text').textContent = 'Restarting...';
+
+                try {
+                    const response = await fetch('http://localhost:3000/api/server/restart', {
+                        method: 'POST'
+                    });
+
+                    if (response.ok) {
+                        showToast('Server restart initiated. Reconnecting...');
+                        
+                        // Wait for server to come back online
+                        let attempts = 0;
+                        const checkServer = setInterval(async () => {
+                            attempts++;
+                            try {
+                                const healthCheck = await fetch('http://localhost:3000/api/settings');
+                                if (healthCheck.ok) {
+                                    clearInterval(checkServer);
+                                    showToast('Server restarted successfully!');
+                                    restartButton.classList.remove('loading');
+                                    restartButton.querySelector('.button-text').textContent = 'Restart Server';
+                                }
+                            } catch (error) {
+                                if (attempts > 30) { // Give up after 30 attempts (15 seconds)
+                                    clearInterval(checkServer);
+                                    showToast('Server restart timed out. Please check server logs.', true);
+                                    restartButton.classList.remove('loading');
+                                    restartButton.querySelector('.button-text').textContent = 'Restart Server';
+                                }
+                            }
+                        }, 500);
+
+                    } else {
+                        throw new Error('Server restart failed');
+                    }
+                } catch (error) {
+                    showToast('Failed to restart server. Please try again.', true);
+                    restartButton.classList.remove('loading');
+                    restartButton.querySelector('.button-text').textContent = 'Restart Server';
+                }
+            }
+
+            restartButton.addEventListener('click', restartServer);
+        });
+    </script>
     <script src="js/main.js"></script>
 </body>
 </html>

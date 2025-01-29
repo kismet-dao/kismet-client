@@ -5,7 +5,7 @@ import userConfigManager from './src/core/user.js';
 import { AVAILABLE_MODELS } from './src/clients/ai/ollama/ollama.js';
 import { PostgresStorageManager } from './src/utils/storage/postgres.js'; // Import the storage manager
 import cors from 'cors'; // Import the cors middleware
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -16,6 +16,10 @@ const port = 3000;
 // Get current file path and directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Define config paths
+const PROJECT_ROOT = path.resolve(__dirname);
+const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, 'resources', 'config', 'user', 'settings.json');
 
 // Enable CORS for all routes
 app.use(cors({
@@ -140,37 +144,74 @@ app.get('/api/chat/sessions', async (req, res) => {
     }
 });
 
+// GET settings endpoint - Should return 404 if no settings exist
 app.get('/api/settings', async (req, res) => {
     try {
-        const config = userConfigManager.getConfig();
-
-        // Check if settings are empty or missing
-        if (!config || !config.settings || Object.keys(config.settings).length === 0) {
-            return res.status(404).json({ error: 'Settings not found' });
+        // Check if settings file exists
+        try {
+            await fs.access(DEFAULT_CONFIG_PATH);
+            const configData = await fs.readFile(DEFAULT_CONFIG_PATH, 'utf8');
+            const config = JSON.parse(configData);
+            res.json(config);
+        } catch (error) {
+            // File doesn't exist or can't be read - return 404
+            res.status(404).json({ error: 'Settings not found' });
         }
-
-        res.json({
-            settings: config.settings,
-            profile: config.profile,
-            preferences: config.preferences
-        });
     } catch (error) {
         console.error('Error fetching settings:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
     }
 });
 
+// POST settings endpoint - Create or update settings
 app.post('/api/settings', async (req, res) => {
-    const { theme, notifications, logLevel } = req.body;
-
     try {
-        await userConfigManager.setSetting('theme', theme);
-        await userConfigManager.setSetting('notifications', notifications);
-        await userConfigManager.setSetting('logLevel', logLevel);
-        res.json({ message: 'Settings updated successfully' });
+        const {
+            // Settings from wizard
+            theme,
+            notifications,
+            logLevel,
+            profile,
+            preferences
+        } = req.body;
+
+        // Create base config structure with null defaults
+        const config = {
+            settings: {
+                theme: theme || null,
+                notifications: notifications !== undefined ? notifications : null,
+                logLevel: logLevel || null
+            },
+            profile: {
+                name: profile?.name || null,
+                timezone: profile?.timezone || null,
+                preferredLanguage: profile?.preferredLanguage || null,
+                useVoiceOutput: profile?.useVoiceOutput !== undefined ? profile.useVoiceOutput : null
+            },
+            preferences: {
+                defaultModel: preferences?.defaultModel || null,
+                defaultCharacter: preferences?.defaultCharacter || null
+            }
+        };
+
+        // Ensure directory exists using fs.promises
+        const configDir = path.dirname(DEFAULT_CONFIG_PATH);
+        await fs.mkdir(configDir, { recursive: true });
+
+        // Write config file using fs.promises
+        await fs.writeFile(
+            DEFAULT_CONFIG_PATH,
+            JSON.stringify(config, null, 2),
+            'utf8'
+        );
+
+        res.json({
+            message: 'Settings saved successfully',
+            config
+        });
     } catch (error) {
-        console.error('Error updating settings:', error);
-        res.status(500).json({ error: 'Failed to update settings' });
+        console.error('Error saving settings:', error);
+        res.status(500).json({ error: 'Failed to save settings' });
     }
 });
 
@@ -392,6 +433,64 @@ app.post('/api/addons/install', async (req, res) => {
     }
   });
   
+
+// Update the restart endpoint
+app.post('/api/server/restart', async (req, res) => {
+    let hasResponded = false;
+    
+    try {
+        // Send response immediately
+        res.json({ 
+            message: 'Server restart initiated',
+            status: 'shutting_down'
+        });
+        hasResponded = true;
+
+        // Wait a moment to ensure response is sent
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Clean up resources
+        console.log('🔄 Cleaning up resources...');
+        await Promise.all([
+            storageManager.cleanup().catch(e => console.error('Storage manager close error:', e)),
+            aiManager.cleanup().catch(e => console.error('AI manager close error:', e))
+        ]);
+
+        // Close server
+        server.close(async () => {
+            console.log('✅ Server closed successfully');
+            
+            try {
+                // Use node's child_process to spawn a new server instance
+                const { spawn } = await import('child_process');
+                
+                const newProcess = spawn('node', ['server.js'], {
+                    detached: true,
+                    stdio: 'inherit'
+                });
+
+                // Unref the child to allow the parent to exit
+                newProcess.unref();
+
+                // Exit the current process
+                process.exit(0);
+            } catch (error) {
+                console.error('Failed to spawn new server process:', error);
+                process.exit(1);
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error during server restart:', error);
+        if (!hasResponded) {
+            res.status(500).json({ 
+                error: 'Failed to restart server',
+                details: error.message 
+            });
+        }
+        process.exit(1);
+    }
+});
 // Start the server
 const server = app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

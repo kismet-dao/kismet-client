@@ -3,124 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kismet CLI Slim</title>
+    <title>Setup Wizard</title>
+    <link rel="stylesheet" href="css/styles.css">
     <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
+        .wizard-container {
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .wizard-header-container {
+            position: fixed; /* Stay in place */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center on screen */
+            text-align: center;
+            z-index: 2; /* Ensure it's on top */
+            opacity: 1; /* Initially visible */
+            transition: opacity 1s ease-in-out; /* Smooth fade */
+        }
+
+        .wizard-header-container.fade-out {
+            opacity: 0;
+            height: 0;
             margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
             overflow: hidden;
-
         }
 
-        /* Main Content Styles */
-        #app {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            overflow-y: auto;
+        .wizard-content {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: none;
+            width: 400px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
-        /* Carousel Styles */
-        .carousel {
-            width: 100%;
-            overflow: hidden;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            position: relative;
-            margin-bottom: 40px;
-        }
-
-        .carousel-inner {
-            display: flex;
-            transition: transform 0.5s ease-in-out;
-        }
-
-        .carousel-item {
-            min-width: 100%;
-            box-sizing: border-box;
-        }
-
-        .carousel-item img {
-            width: 100%;
+        .wizard-content.show {
+            opacity: 1;
             display: block;
         }
 
-        .carousel-control {
+        .wizard-step {
+            display: none;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
             position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            padding: 10px;
             cursor: pointer;
-            font-size: 24px;
-            z-index: 1;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
         }
 
-        .carousel-control.prev {
-            left: 10px;
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
         }
 
-        .carousel-control.next {
-            right: 10px;
+        input:checked + .slider {
+            background-color: #2196F3;
         }
 
-        /* Sections Styles */
-        .sections-horizontal {
-            width: 100%;
-            height: 600px;
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .button-group {
             display: flex;
-            flex-direction: row;
             justify-content: space-between;
-            gap: 20px; /* Spacing between sections */
+            margin-top: 30px;
         }
 
-        .sections {
-            width: 100%;
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            height: auto;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Previous styles remain the same, but update button-group and skip-button styles */
+        .button-group {
             display: flex;
-            flex-direction: column;
-            gap: 20px; /* Spacing between sections */
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            gap: 10px; /* Add spacing between buttons */
         }
 
-        .section {
-            padding: 20px;
-            text-align: left;
+        .skip-button {
+            padding: 10px 20px;
+            background-color: transparent;
+            border: 1px solid #95a5a6;
+            color: #95a5a6;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            /* Remove position absolute since it's now in the button group */
         }
 
-        .section h2 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 24px;
-            color: #2c3e50;
+        .skip-button:hover {
+            background-color: #95a5a6;
+            color: white;
         }
 
-        .section p {
-            color: #666;
-            margin: 0;
-            line-height: 1.6;
+        /* Keep other button styles the same */
+        button.next {
+            background-color: #3498db;
+            color: white;
         }
+
+        button.prev {
+            background-color: #95a5a6;
+            color: white;
+        }
+
     </style>
-        <link rel="stylesheet" href="css/styles.css">
-        <link rel="stylesheet" href="css/sidebar.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <div id="sidebar-container"></div>
+    <div class="wizard-container">
+        <div class="wizard-header-container">
+            <div class="wizard-header">
+                <h2>Welcome to Kismet CLI Slim</h2>
+                <p>Let's get you set up</p>
+            </div>
+        </div>
+    
+        <div class="wizard-content">
+            <div class="wizard-step active" data-step="1">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" placeholder="Enter your name">
+                </div>
+            </div>
 
-    <!-- Main Content -->
-    <div id="app">
-        hello?
+            <div class="wizard-step" data-step="2">
+                <div class="form-group">
+                    <label for="theme">Theme</label>
+                    <select id="theme">
+                        <option value="light" selected>Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notifications</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifications" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Voice Output</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="voiceOutput" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="wizard-step" data-step="3">
+                <div class="form-group">
+                    <label for="model">Default Model</label>
+                    <select id="model">
+                        <option value="deepseek-r1:1.5b" selected>DeepSeek R1 1.5B</option>
+                        <option value="other-model">Other Model</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="logLevel">Log Level</label>
+                    <select id="logLevel">
+                        <option value="error" selected>Error</option>
+                        <option value="warning">Warning</option>
+                        <option value="info">Info</option>
+                        <option value="debug">Debug</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="prev" style="display: none;">Previous</button>
+                <button class="skip-button">Skip for now</button>
+                <button class="next">Next</button>
+            </div>
+        </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const headerContainer = document.querySelector('.wizard-header-container');
+    const wizardContent = document.querySelector('.wizard-content');
+    const steps = document.querySelectorAll('.wizard-step');
+    const prevButton = document.querySelector('.prev');
+    const nextButton = document.querySelector('.next');
+    const skipButton = document.querySelector('.skip-button');
+    let currentStep = 1;
+
+    // Show header immediately, then start transition sequence
+    setTimeout(() => {
+        // Fade out header
+        headerContainer.classList.add('fade-out');
+        
+        // Show wizard content
+        setTimeout(() => {
+            wizardContent.style.display = 'block';
+            requestAnimationFrame(() => {
+                wizardContent.classList.add('show');
+            });
+        }, 1000);
+    }, 2000);
+
+    function updateButtons() {
+        prevButton.style.display = currentStep === 1 ? 'none' : 'block';
+        nextButton.textContent = currentStep === steps.length ? 'Finish' : 'Next';
+
+        // Hide the skip button after step 1 if the user didn't skip
+        if (currentStep > 1) {
+            skipButton.style.display = 'none';
+        } else {
+            skipButton.style.display = 'block';
+        }
+    }
+
+    function updateSteps() {
+        steps.forEach((step, index) => {
+            if (index + 1 === currentStep) {
+                step.classList.add('active');
+            } else {
+                step.classList.remove('active');
+            }
+        });
+
+        updateButtons();
+    }
+
+    async function saveSettings() {
+        try {
+            // First update the theme, notifications, and logLevel
+            const settingsResponse = await fetch('http://localhost:3000/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    theme: document.getElementById('theme').value,
+                    notifications: document.getElementById('notifications').checked,
+                    logLevel: document.getElementById('logLevel').value
+                })
+            });
+
+            if (!settingsResponse.ok) {
+                throw new Error('Failed to save settings');
+            }
+
+            const userConfig = {
+                profile: {
+                    name: document.getElementById('name').value,
+                    preferredLanguage: 'English',
+                    useVoiceOutput: document.getElementById('voiceOutput').checked
+                },
+                preferences: {
+                    defaultModel: document.getElementById('model').value,
+                    defaultCharacter: null
+                }
+            };
+
+            const configResponse = await fetch('http://localhost:3000/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userConfig)
+            });
+
+            if (!configResponse.ok) {
+                throw new Error('Failed to save user configuration');
+            }
+
+            console.log('Settings saved successfully');
+            return true;
+
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            alert('Failed to save settings. Please try again.');
+            return false;
+        }
+    }
+
+    async function saveDefaultSettings() {
+        try {
+            const defaultSettings = {
+                theme: 'light',
+                notifications: true,
+                logLevel: 'error',
+                profile: {
+                    name: null,
+                    timezone: null,
+                    preferredLanguage: 'English',
+                    useVoiceOutput: false
+                },
+                preferences: {
+                    defaultModel: 'deepseek-r1:1.5b',
+                    defaultCharacter: null
+                }
+            };
+
+            const response = await fetch('http://localhost:3000/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(defaultSettings)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save default settings');
+            }
+
+            console.log('Default settings saved successfully');
+            return true;
+        } catch (error) {
+            console.error('Error saving default settings:', error);
+            alert('Failed to save default settings. Please try again.');
+            return false;
+        }
+    }
+
+    // Add skip button handler
+    skipButton.addEventListener('click', async () => {
+        skipButton.disabled = true;
+        skipButton.textContent = 'Skipping...';
+
+        const success = await saveDefaultSettings();
+        
+        if (success) {
+            window.location.href = '/index.html';
+        } else {
+            skipButton.disabled = false;
+            skipButton.textContent = 'Skip for now';
+        }
+    });
+
+    prevButton.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            updateSteps();
+        }
+    });
+
+    nextButton.addEventListener('click', async () => {
+        if (currentStep < steps.length) {
+            currentStep++;
+            updateSteps();
+        } else {
+            nextButton.disabled = true;
+            nextButton.textContent = 'Saving...';
+
+            const success = await saveSettings();
+            
+            if (success) {
+                alert('Setup complete! Settings have been saved.');
+                window.location.href = '/index.html'; 
+            }
+            
+            nextButton.disabled = false;
+            nextButton.textContent = 'Finish';
+        }
+    });
+});
+    </script>
 </body>
 </html>
