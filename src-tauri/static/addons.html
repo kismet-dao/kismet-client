@@ -6,7 +6,131 @@
     <title>Add-ons - Kismet CLI Slim</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/sidebar.css">
-</head>
+    <style>
+        .addons-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .addon-item {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .addon-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+
+
+        .pagination {
+            margin-top: auto;
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+
+.addon-item {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    text-align: center;
+    font-size: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.addon-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+        .addon-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .addon-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .addon-version {
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .addon-downloads {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .addon-downloads::before {
+            content: "↓";
+            font-size: 0.9rem;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            width: max-content;
+            max-width: 300px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+
+        .addon-item:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head> 
 <body>
     <div id="sidebar-container"></div>
 
@@ -65,24 +189,25 @@
             }
         }
 
+        // Only update the createAddonCard function
         function createAddonCard(addon) {
-    return `
-        <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
-            <div class="addon-title">${escapeHtml(addon.title)}</div>
-            <div class="addon-description">${escapeHtml(addon.description || 'No description available')}</div>
-            <div class="addon-meta">
-                <span>v${escapeHtml(addon.version || '1.0.0')}</span>
-                <span>${addon.downloads || 0} downloads</span>
-            </div>
-        </div>
-    `;
-}
+            return `
+                <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
+                    <div class="tooltip">${escapeHtml(addon.description || 'No description available')}</div>
+                    <div class="addon-title">${escapeHtml(addon.title)}</div>
+                    <div class="addon-meta">
+                        <span class="addon-version">v${escapeHtml(addon.version || '1.0.0')}</span>
+                        <span class="addon-downloads">${addon.downloads || 0}</span>
+                    </div>
+                </div>
+            `;
+        }
 
-// In addons.html, update the navigateToDetails function
-function navigateToDetails(addonId) {
-    // Use relative path and ensure the ID is properly passed
-    window.location.href = `./addon-detail.html?id=${encodeURIComponent(addonId)}`;
-}
+        function navigateToDetails(addonId) {
+            // Use relative path and ensure the ID is properly passed
+            window.location.href = `./addon-detail.html?id=${encodeURIComponent(addonId)}`;
+        }
+
         function escapeHtml(unsafe) {
             return unsafe
                  .replace(/&/g, "&amp;")

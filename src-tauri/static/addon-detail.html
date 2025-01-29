@@ -4,23 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add-on Details - Kismet CLI Slim</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/sidebar.css">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-
-        #app {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
         .addon-header {
             display: flex;
             justify-content: space-between;
@@ -29,7 +15,7 @@
         }
 
         .back-button {
-            padding: 8px 16px;
+            padding: 8px 4px;
             cursor: pointer;
             background: #f0f0f0;
             border: none;
@@ -159,6 +145,8 @@
     </style>
 </head>
 <body>
+    <div id="sidebar-container"></div>
+
     <div id="app">
         <div class="addon-header">
             <button class="back-button" onclick="history.back()">← Back to Add-ons</button>
@@ -233,7 +221,7 @@
                 return null;
             }
         }
-        
+
         async function fetchAddonStatus(packageName) {
             try {
                 const response = await fetch(`http://localhost:3000/api/addons/${packageName}/status`);
@@ -249,55 +237,52 @@
         }
 
 
-        // Update the UI with addon details and install/uninstall button visibility
-        async function updateAddonDetails(data) {
-            if (!data) return;
+// Utility function to format date array
+function formatDateTime(dateArray) {
+    if (!Array.isArray(dateArray) || dateArray.length !== 5) {
+        return 'Unknown';
+    }
+    
+    const [year, month, day, hour, minute] = dateArray;
+    try {
+        const date = new Date(year, month - 1, day, hour, minute);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+        });
+    } catch (error) {
+        console.error("Error formatting date:", error);
+        return 'Unknown';
+    }
+}
 
-            document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
-            document.getElementById('addonVersion').textContent = data.version || '1.0.0';
-            document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
-            document.getElementById('addonLastUpdate').textContent = data.lastUpdate || 'Unknown';
-            document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
-            document.getElementById('addonDescription').textContent = data.description || 'No description available';
+// Main function to update addon details
+async function updateAddonDetails(data) {
+    if (!data) return;
 
-            const installButton = document.getElementById('installButton');
-            const uninstallButton = document.getElementById('uninstallButton');
-            const packageName = document.getElementById('addonTitle').textContent; // Get package name
+    document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
+    document.getElementById('addonVersion').textContent = data.version || '1.0.0';
+    document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
+    document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
+    document.getElementById('addonDescription').textContent = data.description || 'No description available';
+    
+    // Format and set the date
+    const formattedDateTime = formatDateTime(data.updatedAt);
+    document.getElementById('addonLastUpdate').textContent = formattedDateTime;
 
-            const isInstalled = await fetchAddonStatus(packageName);
+    // Update install/uninstall button visibility
+    const installButton = document.getElementById('installButton');
+    const uninstallButton = document.getElementById('uninstallButton');
+    const packageName = document.getElementById('addonTitle').textContent;
 
-            if (isInstalled) {
-                installButton.style.display = 'none';
-                uninstallButton.style.display = 'block';
-            } else {
-                installButton.style.display = 'block';
-                uninstallButton.style.display = 'none';
-            }
-        }
-
-        // Update the UI with addon details
-        function updateAddonDetails(data) {
-            if (!data) return;
-
-            document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
-            document.getElementById('addonVersion').textContent = data.version || '1.0.0';
-            document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
-            document.getElementById('addonLastUpdate').textContent = data.lastUpdate || 'Unknown';
-            document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
-            document.getElementById('addonDescription').textContent = data.description || 'No description available';
-
-            // Update install/uninstall button visibility
-            const installButton = document.getElementById('installButton');
-            const uninstallButton = document.getElementById('uninstallButton');
-            
-            if (data.installed) {
-                installButton.style.display = 'none';
-                uninstallButton.style.display = 'block';
-            } else {
-                installButton.style.display = 'block';
-                uninstallButton.style.display = 'none';
-            }
-        }
+    const isInstalled = await fetchAddonStatus(packageName);
+    
+    installButton.style.display = isInstalled ? 'none' : 'block';
+    uninstallButton.style.display = isInstalled ? 'block' : 'none';
+}
 
         async function isInstalled(packageName) {
             try {
@@ -384,5 +369,7 @@
             });
         });
     </script>
+        <script src="js/main.js"></script>
+
 </body>
 </html>

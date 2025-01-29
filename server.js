@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import addonManager from './src/core/addon.js'; 
+import { fromArray, format } from 'date-fns'; // Import the functions
 
 const app = express();
 const port = 3000;
@@ -413,6 +414,25 @@ function updateEnvVariable(envContent, key, value) {
     }
 }
 
+        // Format the date using date-fns
+        let formattedDate = null;
+        if (addon.updatedAt && addon.updatedAt.length === 7) {
+            try {
+                const dateArray = addon.updatedAt;
+                const date = fromArray(dateArray);
+                formattedDate = format(date, 'MMMM dd, yyyy HH:mm:ss'); // Customize the format as needed
+            } catch (dateError) {
+                console.error("Error formatting date:", dateError);
+            }
+        }
+
+        // Add the formatted date to the addon object
+        const addonWithFormattedDate = {
+            ...addon,
+            formattedUpdatedAt: formattedDate, // Add the formatted date
+        };
+
+        
 app.get('/api/addons/:packageName/status', async (req, res) => {
     const { packageName } = req.params;
 
