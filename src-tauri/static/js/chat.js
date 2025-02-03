@@ -216,3 +216,5 @@ async function appendMessageWithTypingEffect(sender, message) {
         await new Promise((resolve) => setTimeout(resolve, typingSpeed));
     }
 }
+
+

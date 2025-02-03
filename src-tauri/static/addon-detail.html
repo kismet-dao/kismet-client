@@ -14,19 +14,6 @@
             margin-bottom: 30px;
         }
 
-        .back-button {
-            padding: 8px 4px;
-            cursor: pointer;
-            background: #f0f0f0;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            transition: background 0.2s;
-        }
-
-        .back-button:hover {
-            background: #e0e0e0;
-        }
 
         .addon-info {
             display: grid;
@@ -149,6 +136,30 @@
             margin-bottom: 20px;
             display: none;
         }
+        .schema-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.schema-section h2 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+#schemaContent {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background: #fff;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-family: monospace;
+    max-height: 400px;
+    overflow-y: auto;
+}
     </style>
 </head>
 <body>
@@ -177,7 +188,12 @@
         <div class="addon-detail-container">
             <div class="addon-info">
                 <div class="addon-image">
-                    <img src="/api/placeholder/300/200" alt="Add-on placeholder image">
+                    <img 
+                        id="addonImage"
+                        src="/api/placeholder/300/200" 
+                        alt="Add-on image"
+                        onerror="this.onerror=null; this.src='/api/placeholder/300/200';"
+                    >
                 </div>
                 <div class="addon-metadata">
                     <h1 id="addonTitle">Loading...</h1>
@@ -203,6 +219,10 @@
             <div class="description">
                 <h2>Description</h2>
                 <p id="addonDescription">Loading...</p>
+            </div>
+
+            <div class="schema-section">
+                <div id="schemaContainer"></div>
             </div>
         </div>
     </div>
@@ -309,25 +329,46 @@ function showLoading(isInstalling) {
     }
 }
 
-// Update addon details and set initial state
-async function updateAddonDetails(data) {
-    if (!data) return;
+        // Update addon details and set initial state
+        async function updateAddonDetails(data) {
+            if (!data) return;
 
-    document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
-    document.getElementById('addonVersion').textContent = data.version || '1.0.0';
-    document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
-    document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
-    document.getElementById('addonDescription').textContent = data.description || 'No description available';
-    
-    const formattedDateTime = formatDateTime(data.updatedAt);
-    document.getElementById('addonLastUpdate').textContent = formattedDateTime;
+            // Update image with loading state
+            const imageContainer = document.querySelector('.addon-image');
+            const addonImage = document.getElementById('addonImage');
+            
+            if (data.imageUrl) {
+                imageContainer.classList.add('image-loading');
+                
+                // Create a new image object to preload
+                const img = new Image();
+                img.onload = function() {
+                    addonImage.src = data.imageUrl;
+                    imageContainer.classList.remove('image-loading');
+                };
+                img.onerror = function() {
+                    addonImage.src = '/api/placeholder/300/200';
+                    imageContainer.classList.remove('image-loading');
+                };
+                img.src = data.imageUrl;
+            }
 
-    // Check initial installation status and update UI
-    const isInstalled = await fetchAddonStatus(data.title);
-    updateUIState(isInstalled);
-}
+            // Update other addon details
+            document.getElementById('addonTitle').textContent = data.title || 'Unknown Title';
+            document.getElementById('addonVersion').textContent = data.version || '1.0.0';
+            document.getElementById('addonAuthor').textContent = data.author || 'Unknown Author';
+            document.getElementById('addonDownloads').textContent = data.downloads?.toLocaleString() || '0';
+            document.getElementById('addonDescription').textContent = data.description || 'No description available';
+            
+            const formattedDateTime = formatDateTime(data.updatedAt);
+            document.getElementById('addonLastUpdate').textContent = formattedDateTime;
 
-// Initialize page
+            // Check initial installation status and update UI
+            const isInstalled = await fetchAddonStatus(data.title);
+            updateUIState(isInstalled);
+        }
+
+        // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const addonId = urlParams.get('id');

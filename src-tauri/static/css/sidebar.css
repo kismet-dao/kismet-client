@@ -79,54 +79,66 @@
             background-color: #0056b3;
         }
 
-        /* Icon Row Styles */
         .icon-row {
             display: flex;
             gap: 8px; /* Add 8px gap between icons */
-            justify-content: flex-start; /* Align icons to the left */
+            justify-content: flex-start; /* Align icons to the left by default */
             padding: 10px 0; /* Add some vertical padding */
+            align-items: center; /* Ensure icons are vertically centered */
         }
-
+        
         .icon-row a {
             color: #fff; /* Make icons white */
             text-decoration: none; /* Remove underline */
             font-size: 18px; /* Adjust icon size */
-            margin-left: 20px;
+            margin-right: 20px;
             transition: color 0.3s ease; /* Smooth color transition */
         }
-
+        
         /* Remove left margin for the first icon in the row */
         .icon-row a:first-child {
             margin-left: 4px;
         }
 
+                /* Remove left margin for the first icon in the row */
+                .icon-row a:last-child {
+                    margin-right: 4px;
+                }
+                
+        
         .icon-row a:hover {
             color: #1abc9c; /* Change color on hover */
         }
+        
+        /* Align the wallet icon to the right */
+        .wallet-icon {
+            margin-left: auto; /* Pushes the wallet icon to the right */
+        }
 
-        /* Play/Pause Icons */
         .play-pause-icons {
             display: flex;
-            flex-direction: row;
-            gap: 10px; /* Add 10px gap between icons */
-            margin-bottom: 15px; /* Add some space below the icons */
+            gap: 10px;
+            margin-bottom: 4px;
         }
-
+        
         .play-pause-icons a {
-            color: #fff; /* Make icons white */
-            text-decoration: none; /* Remove underline */
-            margin-left: 20px;
-            font-size: 18px; /* Adjust icon size */
-            transition: color 0.3s ease; /* Smooth color transition */
+            color: #fff;
+            text-decoration: none;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s, color 0.3s;
         }
-
-        /* Remove left margin for the first icon in the row */
-        .play-pause-icons a:first-child {
-            margin-left: 4px;
+        
+        
+        .play-pause-icons .active-stop {
+            color: #dc2626; /* red */
         }
+        
 
-        .play-pause-icons a:hover {
-            color: #1abc9c; /* Change color on hover */
+
+        
+        .hidden {
+            display: none !important;
         }
 
         /* History Section Styles */
@@ -165,26 +177,26 @@
         }
 
         /* Style for chat history buttons */
-#history-section ul li a.chat-history-button {
-    width: 100%;
-    padding: 10px 15px;
-    background-color: #34495e;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-align: left;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    box-sizing: border-box;
-    transition: background-color 0.3s ease;
-}
+        #history-section ul li a.chat-history-button {
+            width: 100%;
+            padding: 10px 15px;
+            background-color: #34495e;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease;
+        }
 
-#history-section ul li a.chat-history-button:hover {
-    background-color: rgba(26, 188, 156, 0.8); /* More opaque green */
-}
+        #history-section ul li a.chat-history-button:hover {
+            background-color: rgba(26, 188, 156, 0.8); /* More opaque green */
+        }
 
         /* Modified hover effect for history buttons */
         #history-section ul li a:hover {
@@ -211,7 +223,7 @@
             background: #16a085; /* Color of the scrollbar thumb on hover */
         }
 
-                /* Add specific style for logout button hover */
-                #sidebar ul li a#logout:hover {
+        /* Add specific style for logout button hover */
+        #sidebar ul li a#logout:hover {
             background-color: #dc3545; /* Bootstrap's danger red */
         }

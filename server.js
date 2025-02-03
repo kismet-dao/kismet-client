@@ -2,7 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import { AIManager } from './src/core/engine.js'; // Import your AI logic
 import userConfigManager from './src/core/user.js';
-import { AVAILABLE_MODELS } from './src/clients/ai/ollama/ollama.js';
+import ollama, { AVAILABLE_MODELS,  } from './src/clients/ai/ollama/ollama.js';
 import { PostgresStorageManager } from './src/utils/storage/postgres.js'; // Import the storage manager
 import cors from 'cors'; // Import the cors middleware
 import fs from 'fs/promises';
@@ -10,6 +10,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import addonManager from './src/core/addon.js'; 
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { spawn } from 'child_process';
+import os from 'os';
+import WalletService from './src/services/wallet.service.js';
+
+
+const execAsync = promisify(exec);
 
 const app = express();
 const port = 3000;
@@ -37,6 +45,12 @@ const aiManager = new AIManager();
 
 // Initialize PostgreSQL Storage Manager
 const storageManager = new PostgresStorageManager();
+
+// Initialize the wallet service
+const walletService = new WalletService();
+
+// Add this after your other middleware setup
+app.use('/api/wallet', walletService.getRouter());
 
 // Initialize AI Manager, Storage Manager, and User Config Manager
 Promise.all([
@@ -70,6 +84,7 @@ app.use((req, res, next) => {
     next(); // Pass control to the next middleware/route handler
 });
 
+
 // Chat endpoints
 app.post('/api/chat', async (req, res) => {
     const { message, chatId: providedChatId } = req.body;
@@ -97,7 +112,6 @@ app.post('/api/chat', async (req, res) => {
         res.status(500).json({ error: 'Failed to process message' });
     }
 });
-
 
 app.get('/api/chat/history/:chatId', async (req, res) => {
     const { chatId } = req.params;
@@ -161,6 +175,181 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) {
         console.error('Error fetching settings:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// Update the stop endpoint implementation
+app.post('/api/ollama/stop', async (req, res) => {
+    console.log('\n🛑 Attempting to stop Ollama service...');
+    try {
+        console.log('1. Checking if service is running...');
+        const serviceRunning = await ollama.checkService();
+        console.log(`   Service running status: ${serviceRunning}`);
+
+        if (!serviceRunning) {
+            console.log('   ⚠️ Service is not running, returning early');
+            return res.status(400).json({ error: 'Ollama service is not running' });
+        }
+
+        console.log('2. Attempting to cleanup Ollama...');
+        await ollama.cleanup();
+        console.log('   ✅ Cleanup completed');
+
+        // Verify service was actually stopped
+        console.log('3. Verifying service has stopped...');
+        const serviceStillRunning = await ollama.checkService();
+        console.log(`   Service still running: ${serviceStillRunning}`);
+
+        if (serviceStillRunning) {
+            console.log('   ⚠️ Service is still running after cleanup!');
+            // Try force killing the process
+            console.log('4. Attempting to force kill Ollama process...');
+            try {
+                // Use platform-specific commands
+                if (process.platform === 'win32') {
+                    await execAsync('taskkill /F /IM ollama.exe');
+                } else {
+                    await execAsync('pkill -f ollama');
+                }
+                console.log('   ✅ Force kill command executed');
+            } catch (killError) {
+                console.log(`   ⚠️ Force kill attempted: ${killError.message}`);
+                // Even if the kill command fails with an error, it might have worked
+                // So we'll continue and check the status again
+            }
+
+            // Final verification
+            const finalCheck = await ollama.checkService();
+            if (finalCheck) {
+                throw new Error('Failed to stop Ollama service after multiple attempts');
+            }
+        }
+
+        console.log('5. Sending success response');
+        res.json({ message: 'Ollama service stopped successfully' });
+    } catch (error) {
+        console.error('❌ Error stopping Ollama service:', error);
+        res.status(500).json({ 
+            error: 'Failed to stop Ollama service',
+            details: error.message 
+        });
+    }
+});
+
+let pullProgress = {}; // Store progress for each model
+
+app.post('/api/ollama/pull/:model', async (req, res) => {
+    const model = req.params.model;
+
+    if (!model) {
+        return res.status(400).json({ error: 'Model name is required' });
+    }
+
+    try {
+        // Start the pull process
+        const pullProcess = spawn('ollama', ['pull', model], {
+            shell: true,
+            env: { ...process.env }
+        });
+
+        pullProcess.stderr.on('data', (data) => {
+            const output = data.toString().trim();
+            if ((output.includes('MB/') || output.includes('GB/')) && output.includes('%')) {
+                const match = output.match(/(\d+)%.*?([\d.]+\s*(?:MB|GB)).*?([\d.]+\s*(?:MB|GB)).*?([\d.]+\s*MB\/s)/);
+                if (match) {
+                    const [, percentage, downloaded, total, speed] = match;
+                    pullProgress[model] = {
+                        status: 'downloading',
+                        progress: parseInt(percentage),
+                        downloaded,
+                        total,
+                        speed
+                    };
+                }
+            }
+        });
+
+        pullProcess.on('close', (code) => {
+            if (code === 0) {
+                pullProgress[model] = { status: 'complete', message: 'Model pulled successfully' };
+            } else {
+                pullProgress[model] = { status: 'error', message: `Pull process exited with code ${code}` };
+            }
+        });
+
+        pullProcess.on('error', (error) => {
+            pullProgress[model] = { status: 'error', message: error.message };
+        });
+
+        res.json({ message: 'Pull process started' });
+    } catch (error) {
+        console.error('Error initiating pull process:', error);
+        res.status(500).json({ error: 'Failed to pull model', details: error.message });
+    }
+});
+
+// New endpoint to check progress
+app.get('/api/ollama/pull/progress/:model', (req, res) => {
+    const model = req.params.model;
+    const progress = pullProgress[model] || { status: 'unknown', message: 'No progress data available' };
+    res.json(progress);
+});
+
+// Start Ollama service
+app.post('/api/ollama/start', async (req, res) => {
+    console.log('\n▶️ Attempting to start Ollama service...');
+    try {
+        console.log('1. Checking if service is already running...');
+        const serviceRunning = await ollama.checkService();
+        console.log(`   Service running status: ${serviceRunning}`);
+
+        if (serviceRunning) {
+            console.log('   ⚠️ Service is already running, returning early');
+            return res.status(400).json({ error: 'Ollama service is already running' });
+        }
+
+        console.log('2. Starting Ollama service...');
+        await ollama.startService();
+        
+        // Verify service started successfully
+        console.log('3. Verifying service has started...');
+        const serviceStarted = await ollama.checkService();
+        console.log(`   Service started successfully: ${serviceStarted}`);
+
+        console.log('4. Sending success response');
+        res.json({ message: 'Ollama service started successfully' });
+    } catch (error) {
+        console.error('❌ Error starting Ollama service:', error);
+        res.status(500).json({ 
+            error: 'Failed to start Ollama service',
+            details: error.message 
+        });
+    }
+});
+
+// Get Ollama service status
+app.get('/api/ollama/status', async (req, res) => {
+    console.log('\n📊 Checking Ollama service status...');
+    try {
+        console.log('1. Verifying Ollama installation...');
+        const installed = await ollama.verifyOllamaInstallation();
+        console.log(`   Installation verified: ${installed}`);
+
+        console.log('2. Checking if service is running...');
+        const serviceRunning = await ollama.checkService();
+        console.log(`   Service running status: ${serviceRunning}`);
+
+        console.log('3. Sending status response');
+        res.json({
+            installed,
+            running: serviceRunning
+        });
+    } catch (error) {
+        console.error('❌ Error checking Ollama status:', error);
+        res.status(500).json({ 
+            error: 'Failed to check Ollama status',
+            details: error.message 
+        });
     }
 });
 
@@ -260,7 +449,7 @@ app.get('/api/current-model', async (req, res) => {
 });
 
 // Fetch available models
-app.get('/api/models', async (req, res) => {
+app.get('/api/ollama/models', async (req, res) => {
     try {
         const models = AVAILABLE_MODELS; // Use the list of available models
         res.json({ models });
@@ -270,6 +459,48 @@ app.get('/api/models', async (req, res) => {
     }
 });
 
+// Add this to your existing server.js file
+app.get('/api/models', async (req, res) => {
+    try {
+        // Get API keys from environment
+        const hasOpenAI = process.env.OPENAI_API_KEY;
+        const hasAnthropic = process.env.CLAUDE_API_KEY;
+        const hasGoogle = process.env.GOOGLE_AI_API_KEY;
+        const hasCohere = process.env.COHERE_API_KEY;
+
+        // Filter models based on available API keys
+        let availableModels = [];
+
+        if (hasOpenAI) {
+            availableModels = availableModels.concat(API_MODELS.openai.map(model => `openai/${model}`));
+        }
+        if (hasAnthropic) {
+            availableModels = availableModels.concat(API_MODELS.anthropic.map(model => `anthropic/${model}`));
+        }
+        if (hasGoogle) {
+            availableModels = availableModels.concat(API_MODELS.google.map(model => `google/${model}`));
+        }
+        if (hasCohere) {
+            availableModels = availableModels.concat(API_MODELS.cohere.map(model => `cohere/${model}`));
+        }
+
+        res.json({
+            models: availableModels,
+            providers: {
+                openai: !!hasOpenAI,
+                anthropic: !!hasAnthropic,
+                google: !!hasGoogle,
+                cohere: !!hasCohere
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching API models:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch API models',
+            details: error.message 
+        });
+    }
+});
 
 // Switch model
 app.post('/api/switch-model', async (req, res) => {
@@ -415,8 +646,6 @@ function updateEnvVariable(envContent, key, value) {
     }
 }
 
-
-// Replace the existing /api/addons/:packageName/status endpoint with this:
 app.get('/api/addons/:packageName*/status', async (req, res) => {
     // Get the full package name from the URL, including scoped packages
     const packageName = req.params.packageName + (req.params[0] || '');
@@ -446,23 +675,86 @@ app.get('/api/addons/:packageName*/status', async (req, res) => {
     }
 });
 
+// Add this to server.js
+app.get('/api/addons/:packageName/schema', async (req, res) => {
+    const packageName = req.params.packageName;
+    
+    try {
+        // Get the addon's directory path
+        const addonPath = path.join(__dirname, 'node_modules', packageName, 'dist');
+        const schemaPath = path.join(addonPath, 'schema.sql');
+        
+        try {
+            const schema = await fs.readFile(schemaPath, 'utf8');
+            res.json({ schema });
+        } catch (fileError) {
+            if (fileError.code === 'ENOENT') {
+                // No schema file found - this is normal for some addons
+                res.json({ schema: '' });
+            } else {
+                throw fileError;
+            }
+        }
+    } catch (error) {
+        console.error('Error reading schema:', error);
+        res.status(500).json({ 
+            error: 'Failed to read addon schema',
+            details: error.message 
+        });
+    }
+});
+
 app.post('/api/addons/install', async (req, res) => {
     const { addonId } = req.body;
 
     if (!addonId) {
-        return res.status(400).json({ error: 'Addon ID is required' });
+        return res.status(400).json({ 
+            error: 'Addon ID is required' 
+        });
     }
 
     try {
-        console.log(`Installing addon: ${addonId}`);
+        console.log(`📦 Starting installation of ${addonId}...`);
 
+        // Step 1: Install the addon using the addon manager
         await addonManager.install(addonId);
+        console.log(`✅ Successfully installed ${addonId}`);
 
-        res.json({ success: true, message: `Addon ${addonId} installed successfully` });
+        // Step 2: Locate the schema.sql file in the addon's directory
+        const addonPath = path.join(__dirname, 'node_modules', addonId, 'dist');
+        const schemaFilePath = path.join(addonPath, 'schema.sql');
+
+        try {
+            // Try to read the schema file - if it doesn't exist, this will throw
+            const schemaSQL = await fs.readFile(schemaFilePath, 'utf8');
+            console.log(`📄 Found and read schema.sql for addon: ${addonId}`);
+
+            // Execute the SQL commands in the database
+            await storageManager.executeSQL(schemaSQL);
+            console.log(`✅ Schema for ${addonId} successfully applied to database`);
+        } catch (fileError) {
+            // If the error is that the file doesn't exist, that's okay
+            if (fileError.code === 'ENOENT') {
+                console.log(`ℹ️ No schema.sql found for addon: ${addonId} (this is normal)`);
+            } else {
+                // If it's any other error, we should report it
+                console.error('Error processing schema file:', fileError);
+                throw new Error(`Schema file processing failed: ${fileError.message}`);
+            }
+        }
+
+        // Step 3: Respond with success
+        res.json({ 
+            success: true, 
+            message: `Addon ${addonId} installed successfully` 
+        });
 
     } catch (error) {
-        console.error('Addon installation error:', error);
-        res.status(500).json({ error: 'Failed to install addon', details: error.message }); 
+        console.error('❌ Addon installation error:', error);
+        res.status(500).json({ 
+            error: 'Failed to install addon', 
+            details: error.message 
+        });
     }
 });
 
@@ -482,6 +774,52 @@ app.delete('/api/addons/uninstall/:packageName*', async (req, res) => {
     } catch (error) {
         console.error('Addon uninstallation error:', error);
         res.status(500).json({ error: 'Failed to uninstall addon', details: error.message });
+    }
+});
+
+// Add this endpoint to your existing server.js
+app.get('/api/diagnostics', async (req, res) => {
+    try {
+        const cpus = os.cpus();
+        const totalMemory = os.totalmem();
+        const freeMemory = os.freemem();
+        const usedMemory = totalMemory - freeMemory;
+
+        const diagnostics = {
+            system: {
+                platform: process.platform,
+                architecture: process.arch,
+                hostname: os.hostname(),
+                release: os.release(),
+                uptime: os.uptime()
+            },
+            cpu: {
+                model: cpus[0].model,
+                cores: cpus.length,
+                speed: cpus[0].speed,
+                loadAverage: os.loadavg()
+            },
+            memory: {
+                total: (totalMemory / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+                free: (freeMemory / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+                used: (usedMemory / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+                usedPercentage: ((usedMemory / totalMemory) * 100).toFixed(2) + '%'
+            },
+            process: {
+                pid: process.pid,
+                uptime: process.uptime(),
+                nodeVersion: process.version,
+                memoryUsage: process.memoryUsage()
+            }
+        };
+
+        res.json(diagnostics);
+    } catch (error) {
+        console.error('Error getting system diagnostics:', error);
+        res.status(500).json({ 
+            error: 'Failed to get system diagnostics',
+            details: error.message 
+        });
     }
 });
 
@@ -542,6 +880,7 @@ app.post('/api/server/restart', async (req, res) => {
         process.exit(1);
     }
 });
+    
 // Start the server
 const server = app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

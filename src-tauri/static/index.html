@@ -7,9 +7,73 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <style>
-        /* Existing styles remain the same */
-        
-        /* Server Restart Button Styles */
+
+        .diagnostics-container {
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Fixed 2-column grid */
+        .diagnostics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        /* Card Styles */
+        .diagnostics-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            min-height: 300px;
+            display: flex;
+            width: auto;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eef2f6;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            color: #1a2633;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .card-content {
+            flex: 1;
+            color: #34495e;
+        }
+
+        /* Metric Rows */
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .metric-label {
+            font-weight: 500;
+            color: #7f8c8d;
+        }
+
+        .metric-value {
+            font-family: monospace;
+            color: #2c3e50;
+        }
+
+        /* Server Controls */
         .server-controls {
             position: fixed;
             top: 20px;
@@ -45,7 +109,58 @@
             cursor: not-allowed;
         }
 
-        .restart-button .spinner {
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #3498db;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* Refresh Button */
+        .refresh-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .refresh-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .refresh-button:active {
+            transform: translateY(0);
+        }
+
+        .refresh-button.loading {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        /* Spinner */
+        .spinner {
             width: 16px;
             height: 16px;
             border: 2px solid #fff;
@@ -55,7 +170,8 @@
             animation: spin 1s linear infinite;
         }
 
-        .restart-button.loading .spinner {
+        .restart-button.loading .spinner,
+        .refresh-button.loading .spinner {
             display: inline-block;
         }
 
@@ -63,6 +179,7 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Status Toast */
         .status-toast {
             position: fixed;
             bottom: 20px;
@@ -84,6 +201,18 @@
         .status-toast.error {
             background-color: #e74c3c;
         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .diagnostics-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .diagnostics-card {
+                min-height: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -102,7 +231,18 @@
     <div id="statusToast" class="status-toast"></div>
 
     <!-- Main Content -->
-    <div id="app"></div>
+    <div id="app">
+        <div class="diagnostics-container">
+            <h1>System Diagnostics</h1>
+            <div class="diagnostics-grid" id="diagnosticsGrid">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
+            <button id="refreshButton" class="refresh-button">
+                <span class="spinner"></span>
+                <span>Refresh Diagnostics</span>
+            </button>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -166,7 +306,147 @@
 
             restartButton.addEventListener('click', restartServer);
         });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const diagnosticsGrid = document.getElementById('diagnosticsGrid');
+            const refreshButton = document.getElementById('refreshButton');
+            let refreshInterval;
+
+            function createMetricRow(label, value) {
+                return `
+                    <div class="metric-row">
+                        <span class="metric-label">${label}</span>
+                        <span class="metric-value">${value}</span>
+                    </div>
+                `;
+            }
+
+            function createProgressBar(percentage) {
+                return `
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                `;
+            }
+
+            function formatBytes(bytes) {
+                const gb = bytes / (1024 * 1024 * 1024);
+                return gb.toFixed(2) + ' GB';
+            }
+
+            function formatUptime(seconds) {
+                const days = Math.floor(seconds / (24 * 60 * 60));
+                const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+                const minutes = Math.floor((seconds % (60 * 60)) / 60);
+                return `${days}d ${hours}h ${minutes}m`;
+            }
+
+            async function fetchDiagnostics() {
+                if (refreshButton.classList.contains('loading')) return;
+                
+                refreshButton.classList.add('loading');
+                
+                try {
+                    const response = await fetch('http://localhost:3000/api/diagnostics');
+                    const data = await response.json();
+
+                    // Clear existing content
+                    diagnosticsGrid.innerHTML = '';
+
+                    // System Information Card
+                    const systemCard = document.createElement('div');
+                    systemCard.className = 'diagnostics-card';
+                    systemCard.innerHTML = `
+                        <div class="card-header">
+                            <h3>System Information</h3>
+                        </div>
+                        <div class="card-content">
+                            ${createMetricRow('Platform', data.system.platform)}
+                            ${createMetricRow('Architecture', data.system.architecture)}
+                            ${createMetricRow('Hostname', data.system.hostname)}
+                            ${createMetricRow('OS Release', data.system.release)}
+                            ${createMetricRow('Uptime', formatUptime(data.system.uptime))}
+                        </div>
+                    `;
+
+                    // CPU Information Card
+                    const cpuCard = document.createElement('div');
+                    cpuCard.className = 'diagnostics-card';
+                    cpuCard.innerHTML = `
+                        <div class="card-header">
+                            <h3>CPU Information</h3>
+                        </div>
+                        <div class="card-content">
+                            ${createMetricRow('Model', data.cpu.model)}
+                            ${createMetricRow('Cores', data.cpu.cores)}
+                            ${createMetricRow('Speed', data.cpu.speed + ' MHz')}
+                            ${createMetricRow('Load Average (1m)', data.cpu.loadAverage[0].toFixed(2))}
+                            ${createMetricRow('Load Average (5m)', data.cpu.loadAverage[1].toFixed(2))}
+                            ${createMetricRow('Load Average (15m)', data.cpu.loadAverage[2].toFixed(2))}
+                        </div>
+                    `;
+
+                    // Memory Information Card
+                    const memoryCard = document.createElement('div');
+                    memoryCard.className = 'diagnostics-card';
+                    memoryCard.innerHTML = `
+                        <div class="card-header">
+                            <h3>Memory Usage</h3>
+                        </div>
+                        <div class="card-content">
+                            ${createMetricRow('Total Memory', data.memory.total)}
+                            ${createMetricRow('Used Memory', data.memory.used)}
+                            ${createMetricRow('Free Memory', data.memory.free)}
+                            ${createMetricRow('Used Percentage', data.memory.usedPercentage + '%')}
+                            ${createProgressBar(data.memory.usedPercentage)}
+                        </div>
+                    `;
+
+                    // Process Information Card
+                    const processCard = document.createElement('div');
+                    processCard.className = 'diagnostics-card';
+                    processCard.innerHTML = `
+                        <div class="card-header">
+                            <h3>Process Information</h3>
+                        </div>
+                        <div class="card-content">
+                            ${createMetricRow('Process ID', data.process.pid)}
+                            ${createMetricRow('Node Version', data.process.nodeVersion)}
+                            ${createMetricRow('Process Uptime', formatUptime(data.process.uptime))}
+                            ${createMetricRow('Heap Used', formatBytes(data.process.memoryUsage.heapUsed))}
+                            ${createMetricRow('Heap Total', formatBytes(data.process.memoryUsage.heapTotal))}
+                        </div>
+                    `;
+
+                    // Add all cards to the grid
+                    diagnosticsGrid.appendChild(systemCard);
+                    diagnosticsGrid.appendChild(cpuCard);
+                    diagnosticsGrid.appendChild(memoryCard);
+                    diagnosticsGrid.appendChild(processCard);
+
+                } catch (error) {
+                    console.error('Error fetching diagnostics:', error);
+                } finally {
+                    refreshButton.classList.remove('loading');
+                }
+            }
+
+            // Initial fetch
+            fetchDiagnostics();
+
+            // Setup refresh button
+            refreshButton.addEventListener('click', fetchDiagnostics);
+
+            // Auto-refresh every 30 seconds
+            refreshInterval = setInterval(fetchDiagnostics, 30000);
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                clearInterval(refreshInterval);
+            });
+        });
     </script>
     <script src="js/main.js"></script>
+    
 </body>
 </html>

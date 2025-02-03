@@ -1,9 +1,7 @@
-// Modify the loadSidebar function to check settings first
 async function loadSidebar() {
-    // Check settings before loading sidebar
     const settingsExist = await checkSettings();
     if (!settingsExist) {
-        return; // Stop execution if settings check failed or redirected
+        return;
     }
 
     try {
@@ -11,13 +9,14 @@ async function loadSidebar() {
         const sidebarHTML = await response.text();
         document.getElementById('sidebar-container').innerHTML = sidebarHTML;
 
-        // Rest of the loadSidebar function remains the same...
+        // Add event listeners after sidebar is loaded
+        setupPlayPauseControls();
+        
         await fetchAndDisplayChatHistory();
         
         const newChatButton = document.getElementById('start-new-chat');
         if (newChatButton) {
             newChatButton.addEventListener('click', async (event) => {
-                // Existing newChatButton code...
             });
         }
     } catch (error) {
@@ -25,6 +24,62 @@ async function loadSidebar() {
     }
 }
 
+function setupPlayPauseControls() {
+    const playBtn = document.getElementById('play-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+
+    if (!playBtn || !stopBtn || !pauseBtn) {
+        console.error('Play/Pause controls not found:', { playBtn, stopBtn, pauseBtn });
+        return;
+    }
+
+    console.log('Setting up play/pause controls');
+
+    // Play button click handler
+    playBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Play clicked');
+        playBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+        stopBtn.classList.add('active-stop');
+        pauseBtn.classList.remove('hidden');
+    });
+
+    // Stop button click handler
+    stopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Stop clicked');
+        stopBtn.classList.add('hidden');
+        pauseBtn.classList.add('hidden');
+        playBtn.classList.remove('hidden');
+        pauseBtn.classList.remove('active-pause');
+    });
+
+    // Pause button click handler
+    pauseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Pause clicked');
+        
+        // Toggle pause state
+        const isPaused = pauseBtn.classList.toggle('active-pause');
+        
+        if (isPaused) {
+            // If we're pausing, show play button and hide stop
+            stopBtn.classList.add('hidden');
+            playBtn.classList.remove('hidden');
+        } else {
+            // If we're resuming, show stop button and hide play
+            stopBtn.classList.remove('hidden');
+            playBtn.classList.add('hidden');
+        }
+    });
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    loadSidebar();
+});
 // Ensure checkSettings runs when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     checkSettings();
@@ -88,9 +143,6 @@ async function fetchAndDisplayChatHistory() {
     }
 }
 
-// Load sidebar when page loads
-loadSidebar();
-
 async function handleServerRestart() {
     try {
         const response = await fetch('http://localhost:3000/api/server/restart', {
@@ -127,8 +179,6 @@ async function handleServerRestart() {
     }
 }
 
-// Add this to the beginning of main.js
-
 async function checkSettings() {
     try {
         const response = await fetch('http://localhost:3000/api/settings');
@@ -156,4 +206,8 @@ async function checkSettings() {
         return false;
     }
 }
+
+
+
+
 

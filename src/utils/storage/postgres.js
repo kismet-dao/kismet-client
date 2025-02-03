@@ -158,6 +158,22 @@ async createChatSession() {
     }
 }
 
+async executeSQL(sql) {
+    const client = await this.pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query(sql);
+        await client.query('COMMIT');
+        console.log('SQL commands executed successfully.');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error executing SQL:', error);
+        throw new Error(`Failed to execute SQL: ${error.message}`);
+    } finally {
+        client.release();
+    }
+}
+
 /**
  * Save a chat message to the database
  * @param {string} chatId - The ID of the chat session

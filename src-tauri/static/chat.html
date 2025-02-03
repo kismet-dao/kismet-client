@@ -10,6 +10,7 @@
         #current-model {
             position: sticky;
             top: 0;
+            min-height: 10px;
             font-size: 12px;
             color: #666;
             padding: 10px;
@@ -22,16 +23,64 @@
             margin-bottom: 10px;
         }
 
-        #model-select {
-            padding: 4px 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #333;
-            background-color: white;
-            cursor: pointer;
-        }
+/* Model select container styling */
+.custom-select {
+    position: relative;
+    display: inline-block;
+    width: 200px;
+    margin-left: 4px;
+}
 
+.custom-select select {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #333;
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Control the dropdown height */
+#model-select {
+    max-height: 300px; /* Fixed maximum height */
+}
+
+/* Dropdown menu styling */
+#model-select optgroup {
+    max-height: 120px; /* Fixed height for each group */
+    overflow-y: auto;
+    font-weight: bold;
+    color: #666;
+    background-color: #f5f5f5;
+    padding: 8px;
+}
+
+#model-select option {
+    padding: 8px;
+    color: #333;
+    background-color: white;
+}
+
+/* Improved scrollbar styling */
+#model-select::-webkit-scrollbar {
+    width: 8px;
+}
+
+#model-select::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#model-select::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#model-select::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
         #model-select:focus {
             outline: none;
             border-color: #007bff;
@@ -174,9 +223,16 @@
         <div id="chat">
             <div id="current-model">
                 Current Model: 
-                <select id="model-select">
-                    <option value="">Loading models...</option>
-                </select>
+                <div class="custom-select">
+                    <select id="model-select">
+                        <optgroup label="Local">
+                            <!-- Ollama models will be populated here -->
+                        </optgroup>
+                        <optgroup label="API">
+                            <!-- API services will be populated here -->
+                        </optgroup>
+                    </select>
+                </div>
             </div>
         </div>
         
@@ -189,27 +245,48 @@
     </div>
 
     <script>
-        // Add this to your existing chat.js or include it here
         async function loadModels() {
             try {
-                const response = await fetch('http://localhost:3000/api/models');
-                const data = await response.json();
+                // Fetch only installed Ollama models
+                const localResponse = await fetch('http://localhost:11434/api/tags');
+                if (!localResponse.ok) {
+                    throw new Error('Failed to fetch local models');
+                }
+                
+                const localData = await localResponse.json();
                 const modelSelect = document.getElementById('model-select');
                 modelSelect.innerHTML = '';
                 
-                data.models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model;
-                    option.textContent = model;
-                    modelSelect.appendChild(option);
-                });
+                // Create option group for installed models
+                const localGroup = document.createElement('optgroup');
+                localGroup.label = 'Installed Models';
+                
+                // Add installed models
+                if (localData.models && Array.isArray(localData.models)) {
+                    localData.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = model.name;
+                        localGroup.appendChild(option);
+                    });
+                }
+                
+                // Append group to select
+                modelSelect.appendChild(localGroup);
 
                 // Load and set current model
                 const currentModelResponse = await fetch('http://localhost:3000/api/current-model');
                 const currentModelData = await currentModelResponse.json();
-                modelSelect.value = currentModelData.model;
+                if (currentModelData.model) {
+                    modelSelect.value = currentModelData.model;
+                }
             } catch (error) {
                 console.error('Error loading models:', error);
+                const modelSelect = document.getElementById('model-select');
+                const errorOption = document.createElement('option');
+                errorOption.textContent = 'Error loading models';
+                modelSelect.innerHTML = '';
+                modelSelect.appendChild(errorOption);
             }
         }
 
@@ -229,7 +306,6 @@
                     throw new Error('Failed to switch model');
                 }
 
-                // Add a system message to indicate model change
                 appendMessage('ai', `Switched to model: ${newModel}`);
             } catch (error) {
                 console.error('Error switching model:', error);

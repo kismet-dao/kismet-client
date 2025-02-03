@@ -9,8 +9,8 @@
     <style>
         .addons-grid {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(4, 1fr);  /* This is the correct syntax */
+            gap: 20px;
             margin-bottom: 20px;
         }
 
@@ -18,11 +18,12 @@
             position: relative;
             background: white;
             border-radius: 12px;
-            padding: 20px;
+            padding: 0;
             cursor: pointer;
             transition: all 0.2s ease;
             border: 1px solid #e5e7eb;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
 
         .addon-item:hover {
@@ -30,32 +31,39 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-
-
-        .pagination {
-            margin-top: auto;
-            padding: 20px 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 1.5rem;
-            border-top: 1px solid #e5e7eb;
+        .addon-image-container {
+            width: 100%;
+            height: 150px;
+            overflow: hidden;
+            background: #f3f4f6;
+            position: relative;
+            display: flex;           /* Add this */
+            justify-content: center; /* Add this */
+            align-items: center;     /* Add this */
         }
 
+        .ollama-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 20px;
+            max-width: 80%;         /* Add this to prevent stretching */
+        }
 
-.addon-item {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 15px;
-    text-align: center;
-    font-size: 14px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.addon-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
+        .addon-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.2s ease;
+        }
+
+        .addon-item:hover .addon-image {
+            transform: scale(1.05);
+        }
+
+        .addon-content {
+            padding: 15px;
+        }
 
         .addon-title {
             font-size: 1.1rem;
@@ -90,18 +98,22 @@
 
         .addon-downloads::before {
             content: "↓";
-            font-size: 0.9rem;
             margin-right: 4px;
             margin-bottom: 4px;
-            color: #22c55e; /* Green color */
-            display: flex;
-            align-items: center;
+            color: #22c55e;
         }
 
-        /* Ensure the number is vertically aligned */
-        .addon-downloads span {
-            display: flex;
-            align-items: center;
+        .installed-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #22c55e;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 2;
         }
 
         .tooltip {
@@ -172,6 +184,44 @@
     font-size: 0.95rem;
     color: #4b5563;
 }
+
+.search-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px; /* Space below search bar */
+        }
+
+      .search-tag {
+            padding: 6px 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            background-color: white; /* Or a light gray */
+            color: #4b5563; /* A slightly darker gray */
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s; /* Smooth transitions */
+        }
+
+      .search-tag:hover {
+            background-color: #f3f4f6; /* Light gray on hover */
+            /* color: #1a1a1a;  Darker text on hover */
+            border-color: #d1d5db; /* Slightly darker border on hover */
+        }
+
+        .search-tag.active {
+            background-color: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        .no-results {
+    background-color: #f9fafb;
+    border: 1px dashed #e5e7eb;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 1rem;
+}
     </style>
 </head> 
 <body>
@@ -183,9 +233,17 @@
         </div>
   
         <input type="text" id="search-input" class="search-bar" placeholder="Search add-ons...">
-        <div class="addons-grid" id="addons-grid">
-            <!-- Add-on items will be dynamically inserted here -->
-        </div>
+        <div class="search-tags">
+            <div class="search-tag" data-tag="audio/video">Audio/Video</div>
+            <div class="search-tag" data-tag="scrapers">Scrapers</div>
+            <div class="search-tag" data-tag="social">Social</div>
+            <div class="search-tag" data-tag="analytics">Analytics</div>
+            <div class="search-tag" data-tag="web3">Web3</div>
+            </div>
+
+        <div class="addons-grid" id="addons-grid"></div>
+
+        
         <div class="pagination">
             <button id="prev-page" disabled>Previous</button>
             <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
@@ -194,43 +252,79 @@
     </div>
 
     <script>
-        let currentPage = 1;
-        let itemsPerPage = 20;
-        let totalPages = 1;
-        let searchTimeout;
+let currentPage = 1;
+let itemsPerPage = 20;
+let totalPages = 1;
+let searchTimeout;
+let currentTag = null;
 
-        const addonsGrid = document.getElementById('addons-grid');
-        const searchInput = document.getElementById('search-input');
-        const prevButton = document.getElementById('prev-page');
-        const nextButton = document.getElementById('next-page');
-        const currentPageSpan = document.getElementById('current-page');
-        const totalPagesSpan = document.getElementById('total-pages');
+const addonsGrid = document.getElementById('addons-grid');
+const searchInput = document.getElementById('search-input');
+const prevButton = document.getElementById('prev-page');
+const nextButton = document.getElementById('next-page');
+const currentPageSpan = document.getElementById('current-page');
+const totalPagesSpan = document.getElementById('total-pages');
+const searchTagsContainer = document.querySelector('.search-tags');
+const searchTags = searchTagsContainer.querySelectorAll('.search-tag');
 
-        async function fetchAddons(page = 1, query = '') {
-            try {
-                const url = new URL('http://localhost:8082/api/addons'); 
-                url.searchParams.append('page', page);
-                url.searchParams.append('size', itemsPerPage);
-                if (query) {
-                    url.searchParams.append('query', query);
-                }
+async function fetchAddons(page = 1, query = '', tag = null) {
+    try {
+        console.log('Fetching Addons - Start', {
+            page: page,
+            query: query,
+            tag: tag
+        });
 
-                const response = await fetch(url.toString());
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('Received data:', data); // Debug log
-                return {
-                    addons: data.addons || [],
-                    currentPage: data.currentPage || 1,
-                    totalPages: data.totalPages || 1
-                };
-            } catch (error) {
-                console.error('Error fetching addons:', error);
-                return { addons: [], currentPage: 1, totalPages: 1 };
-            }
+        const url = new URL('http://localhost:8082/api/addons');
+        url.searchParams.append('page', page);
+        url.searchParams.append('size', itemsPerPage);
+        
+        // If both query and tag are provided, combine them
+        if (query) {
+            console.log('Adding query parameter:', query);
+            url.searchParams.append('query', query);
         }
+        
+        if (tag) {
+            console.log('Adding tag parameter:', tag);
+            url.searchParams.append('query', tag);
+        }
+
+        console.log('Full URL:', url.toString());
+
+        const response = await fetch(url.toString());
+        
+        console.log('Fetch Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log('Parsed JSON Data:', data);
+
+        const result = {
+            addons: data.addons || [],
+            currentPage: data.currentPage || 1,
+            totalPages: data.totalPages || 1
+        };
+
+        console.log('Processed Result:', result);
+
+        return result;
+    } catch (error) {
+        console.error('Error in fetchAddons:', {
+            message: error.message,
+            stack: error.stack
+        });
+        return { addons: [], currentPage: 1, totalPages: 1 };
+    }
+}
 
 // First add the new style for the installed badge
 const installedBadgeStyle = `
@@ -252,63 +346,144 @@ const styleSheet = document.createElement("style");
 styleSheet.textContent = installedBadgeStyle;
 document.head.appendChild(styleSheet);
 
-// Modified createAddonCard function to check installation status
 async function createAddonCard(addon) {
     try {
         const encodedPackageName = encodeURIComponent(addon.title);
         const response = await fetch(`http://localhost:3000/api/addons/${encodedPackageName}/status`);
+        const installed = (await response.json()).installed;
+        
+        let imageUrl;
+        let imageClass = 'addon-image';
+        
+        if (addon.title.toLowerCase() === 'ollama') {
+            imageUrl = 'https://ollama.com/public/ollama.png';
+            imageClass = 'ollama-image';
+        } else {
+            imageUrl = addon.imageUrl || '/api/placeholder/300/150';
+        }
         
         return `
             <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
                 ${installed ? '<div class="installed-badge">Installed</div>' : ''}
-                <div class="tooltip">${escapeHtml(addon.description || 'No description available')}</div>
-                <div class="addon-title">${escapeHtml(addon.title)}</div>
-                <div class="addon-meta">
-                    <span class="addon-version">v${escapeHtml(addon.version || '1.0.0')}</span>
-                    <span class="addon-downloads"><span>${addon.downloads || 0}</span></span>
+                <div class="addon-image-container">
+                    <img 
+                        src="${escapeHtml(imageUrl)}" 
+                        alt="${escapeHtml(addon.title)}"
+                        class="${imageClass}"
+                        onerror="this.src='/api/placeholder/300/150'"
+                    >
+                </div>
+                <div class="addon-content">
+                    <div class="addon-title">${escapeHtml(addon.title)}</div>
+                    <div class="addon-meta">
+                        <span class="addon-version">v${escapeHtml(addon.version)}</span>
+                        <span class="addon-downloads">${addon.downloads}</span>
+                    </div>
                 </div>
             </div>
         `;
     } catch (error) {
-        console.error('Error checking addon installation status:', error);
-        return `
-            <div class="addon-item" onclick="navigateToDetails('${addon.id}')">
-                <div class="tooltip">${escapeHtml(addon.description || 'No description available')}</div>
-                <div class="addon-title">${escapeHtml(addon.title)}</div>
-                <div class="addon-meta">
-                    <span class="addon-version">v${escapeHtml(addon.version || '1.0.0')}</span>
-                    <span class="addon-downloads"><span>${addon.downloads || 0}</span></span>
-                </div>
-            </div>
-        `;
+        console.error('Error creating addon card:', error);
+        return '';
     }
 }
 
-// Modified updateAddons function to handle async card creation
 async function updateAddons() {
     const query = searchInput.value.trim();
     addonsGrid.innerHTML = '<div class="loading">Loading add-ons...</div>';
     
-    const data = await fetchAddons(currentPage, query);
+    const data = await fetchAddons(currentPage, query, currentTag);
     
-    if (data.addons.length === 0) {
-        addonsGrid.innerHTML = '<div class="no-results">No add-ons found</div>';
+    
+    const ollamaCard = `
+    <div class="addon-item ollama-card" onclick="window.location.href='./ollama.html'">
+        <div class="installed-badge">Installed</div>
+        <div class="tooltip">Official Ollama integration for Kismet. Essential for running local AI models.</div>
+        <div class="addon-image-container">
+            <img 
+                src="https://ollama.com/public/ollama.png"
+                alt="Ollama"
+                class="ollama-image"
+                onerror="this.src='/api/placeholder/300/150'"
+            >
+        </div>
+        <div class="addon-content">
+            <div class="addon-title">Ollama</div>
+        </div>
+    </div>
+`;
+
+
+if (data.addons.length === 0) {
+        let noResultsMessage = 'No add-ons found.';
+        if (query) {
+            noResultsMessage += ` No results for "${query}".`;
+        }
+        if (currentTag) {
+            noResultsMessage += ` No add-ons with tag "${currentTag}".`;
+        }
+        
+        addonsGrid.innerHTML = `
+            <div class="no-results" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+                ${noResultsMessage}
+            </div>
+        ` + ollamaCard;
         return;
     }
 
-    // Create all addon cards and wait for them to complete
-    const cardPromises = data.addons.map(addon => createAddonCard(addon));
+    const cardPromises = data.addons
+        .filter(addon => addon.title.toLowerCase() !== 'ollama')
+        .map(addon => createAddonCard(addon));
+    
     const cards = await Promise.all(cardPromises);
-    addonsGrid.innerHTML = cards.join('');
+    
+    addonsGrid.innerHTML = ollamaCard + cards.join('');
 
     currentPage = data.currentPage;
     totalPages = data.totalPages;
     updatePaginationButtons();
 }
-        function navigateToDetails(addonId) {
-            // Use relative path and ensure the ID is properly passed
-            window.location.href = `./addon-detail.html?id=${encodeURIComponent(addonId)}`;
-        }
+
+
+// Moved outside the template literal - this is a separate function
+function navigateToDetails(addonId) {
+    // Use relative path and ensure the ID is properly passed
+    window.location.href = `./addon-detail.html?id=${encodeURIComponent(addonId)}`;
+}
+
+searchTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+        // Remove active class from all tags
+        searchTags.forEach(t => t.classList.remove('active'));
+
+        // Add active class to the clicked tag
+        tag.classList.add('active');
+
+        // Set current tag or reset if already active
+        currentTag = tag.classList.contains('active') ? tag.dataset.tag : null;
+        
+        // Clear search input
+        searchInput.value = '';
+        
+        // Reset to first page
+        currentPage = 1;
+        
+        // Update addons
+        updateAddons();
+    });
+});
+
+// Update search input event listener
+searchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        // Remove active class from tags when using search bar
+        searchTags.forEach(t => t.classList.remove('active'));
+        currentTag = null;
+        currentPage = 1;
+        updateAddons();
+    }, 300);  // Debounce search
+});
 
         function escapeHtml(unsafe) {
             return unsafe
@@ -325,15 +500,6 @@ async function updateAddons() {
             currentPageSpan.textContent = currentPage;
             totalPagesSpan.textContent = totalPages;
         }
-
-        // Event Listeners
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentPage = 1;
-                updateAddons();
-            }, 300);
-        });
 
         prevButton.addEventListener('click', () => {
             if (currentPage > 1) {

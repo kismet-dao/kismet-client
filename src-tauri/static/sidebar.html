@@ -13,13 +13,17 @@
         <div id="top-section">
             <!-- Play/Pause Icons -->
             <div class="play-pause-icons">
-                <a id="play" href="#">
+                <a id="play-btn" href="#" class="active-play">
                     <i class="fas fa-play"></i>
                 </a>
-                <a id="pause" href="#">
+                <a id="stop-btn" href="#" class="hidden">
+                    <i class="fas fa-square"></i>
+                </a>
+                <a id="pause-btn" href="#" class="hidden">
                     <i class="fas fa-pause"></i>
                 </a>
             </div>
+        
 
             <!-- Start New Chat Button -->
             <ul>
@@ -53,19 +57,24 @@
                 </li>
             </ul>
 
-            <!-- Icon Row (Settings, Profile, Diagnostics, Key, Help) -->
+                <!-- Icon Row (Settings, Profile, Diagnostics, Key, Help) -->
             <div class="icon-row">
-                <a id="profile" href="./index.html">
-                    <i class="fas fa-house"></i>
-                </a>
-                <a id="settings" href="./settings.html">
-                    <i class="fas fa-cog"></i>
-                </a>
-                <a id="key" href="./api-key.html">
-                    <i class="fas fa-key"></i>
-                </a>
-                <a id="help" href="./help.html">
-                    <i class="fas fa-question-circle"></i> 
+                <div class="icon-group">
+                    <a id="profile" href="./index.html">
+                        <i class="fas fa-house"></i>
+                    </a>
+                    <a id="settings" href="./settings.html">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                    <a id="key" href="./api-key.html">
+                        <i class="fas fa-key"></i>
+                    </a>
+                    <a id="help" href="./help.html">
+                        <i class="fas fa-question-circle"></i> 
+                    </a>
+                </div>
+                <a id="wallet" href="./wallet.html" class="wallet-icon">
+                    <i class="fas fa-wallet"></i>
                 </a>
             </div>
 

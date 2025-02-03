@@ -10,7 +10,8 @@
         "server": "node server.js"
     },
     "dependencies": {
-        "@kismet-dao/wallet-plugin": "^1.0.0",
+        "@kismet-dao/wallet-plugin": "^1.0.5",
+        "@kismet-dao/web-client": "^1.0.1",
         "@tauri-apps/api": "^2.2.0",
         "axios": "^1.7.9",
         "body-parser": "^1.20.3",

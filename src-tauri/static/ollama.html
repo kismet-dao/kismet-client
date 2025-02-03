@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Setup - Kismet CLI Slim</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        .addon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            margin-top: 20px;
+        }
+
+        .setup-container {
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .model-list {
+            margin-top: 20px;
+        }
+
+        .model-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-info {
+            flex: 1;
+        }
+
+        .setup-container h2 {
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+            color: #333;
+            margin-left: 4px
+        }
+
+        .model-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .model-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .model-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1f2937;
+        }
+
+        .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+
+        .error-message {
+            color: #ef4444;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .server-control {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot.running {
+            background: #22c55e;
+        }
+
+        .status-dot.stopped {
+            background: #ef4444;
+        }
+
+        .btn-start {
+            background: #22c55e;
+            color: white;
+            border: none;
+        }
+
+        .btn-start:hover {
+            background: #16a34a;
+        }
+
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+
+        .btn-stop:hover {
+            background: #dc2626;
+        }
+
+    .addon-info {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            align-items: start;
+            margin-bottom: 30px;
+        }
+
+    .addon-img {
+            width: 100%;
+            height: 200px;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            align-items: center;
+        }
+
+        .addon-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .addon-metadata {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: auto;
+        }
+
+        .model-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .model-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.model-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    min-width: 120px; /* Ensures consistent space for model names */
+}
+
+.model-versions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex: 1;
+    justify-content: left;
+}
+
+.version-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background-color: #f9fafb;
+}
+
+.version-checkbox input[type="radio"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.version-checkbox label {
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-left: 4px;
+}
+
+.pull-button-container {
+    min-width: 120px; /* Ensures consistent space for the button */
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    white-space: nowrap;
+}
+
+/* For single version display */
+.model-version-text {
+    flex: 1;
+    text-align: left;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.progress-container {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #2563eb;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Added for smooth transition */
+        .pull-button-container {
+            min-width: 120px;
+            display: flex;
+            justify-content: flex-end;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .disk-info {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .disk-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .disk-info-label {
+            color: #6b7280;
+        }
+
+        .disk-info-value {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .progress-container {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #2563eb;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .installation-status {
+            margin-top: 8px;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .warning-text {
+            color: #f59e0b;
+            font-size: 0.875rem;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+
+    <div id="app">
+        <div class="addon-header">
+            <button class="back-button" onclick="history.back()">← Back to Add-ons</button>
+            <div class="server-status-container">
+                <div id="server-button-container">
+                    <!-- Button will be inserted here by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div class="addon-detail-container">
+                   <!-- Add this new section for Ollama details -->
+                   <div id="addon-info" class="addon-info">
+                    <div class="addon-img">
+                        <img src="https://ollama.com/public/ollama.png" alt="Ollama" class="ollama-image">
+                    </div>
+                    <div class="addon-metadata">
+                        <h2>Ollama</h2>
+                        <p>Official Ollama integration for Kismet. Essential for running local AI models.</p>
+                    </div>
+                </div>
+        </div>
+
+
+
+
+        <div class="setup-container">
+            <div id="model-section" class="hidden">
+                <h2>Installed Models</h2>
+                <div class="model-list" id="model-list">
+                    <!-- Models will be inserted here -->
+                </div>
+            </div>
+
+            <div id="available-model-section" class="hidden">
+                <h2>Available Models</h2>
+                <div class="model-list" id="available-model-list">
+                    <!-- Available models will be inserted here -->
+                </div>
+            </div>
+
+
+
+            <div id="error-message" class="error-message hidden"></div>
+        </div>
+
+        <div id="installation-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Installing Model</h3>
+                </div>
+                <div class="disk-info">
+                    <div class="disk-info-row">
+                        <span class="disk-info-label">Model:</span>
+                        <span class="disk-info-value" id="model-name">-</span>
+                    </div>
+                    <div class="disk-info-row">
+                        <span class="disk-info-label">Downloaded:</span>
+                        <span class="disk-info-value" id="downloaded-size">-</span>
+                    </div>
+                    <div class="disk-info-row">
+                        <span class="disk-info-label">Total Size:</span>
+                        <span class="disk-info-value" id="total-size">-</span>
+                    </div>
+                    <div class="disk-info-row">
+                        <span class="disk-info-label">Speed:</span>
+                        <span class="disk-info-value" id="download-speed">-</span>
+                    </div>
+                </div>
+                <div class="progress-container mt-4">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-percentage">0%</div>
+                </div>
+                <div id="installation-status" class="installation-status"></div>
+                <div id="warning-text" class="warning-text hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isOllamaRunning = false;
+
+        async function checkOllamaStatus() {
+    try {
+        // First check if Ollama is running
+        const statusResponse = await fetch('http://localhost:11434/api/tags');
+        if (!statusResponse.ok) throw new Error('Ollama is not running');
+        
+        const tagsData = await statusResponse.json();
+        isOllamaRunning = true;
+        updateStatusUI(true);
+        
+        // Transform installed models into the expected format
+        const installedModels = tagsData.models ? tagsData.models.map(model => ({
+            name: model.name,
+            size: model.size,
+            installed: true
+        })) : [];
+        
+        // Fetch available models from our backend
+        const availableResponse = await fetch('http://localhost:3000/api/ollama/models');
+        if (!availableResponse.ok) {
+            throw new Error('Failed to fetch available models');
+        }
+        const availableData = await availableResponse.json();
+        
+        // Filter out only the exact installed models, not all versions of the same base model
+        const availableModels = Array.isArray(availableData.models) ? 
+            availableData.models.filter(modelName => 
+                !installedModels.some(m => m.name === modelName) // Only exclude exact matches
+            ) :
+            [];
+        
+        // Update both installed and available models
+        updateModelList(installedModels);  // Keep this for installed models
+        updateAvailableModelList(availableModels);  // This is for available models
+        
+    } catch (error) {
+        console.error('Ollama status check failed:', error);
+        isOllamaRunning = false;
+        updateStatusUI(false);
+    }
+}
+
+
+        // Add these new functions to your JavaScript
+        async function startOllamaServer() {
+            try {
+                const response = await fetch('http://localhost:3000/api/ollama/start', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start Ollama server');
+                }
+                
+                showError('Starting Ollama server...', 'success');
+                // Wait a moment for the server to start
+                setTimeout(checkOllamaStatus, 3000);
+            } catch (error) {
+                console.error('Error starting server:', error);
+                showError(`Failed to start Ollama server: ${error.message}`);
+            }
+        }
+
+        async function stopOllamaServer() {
+            try {
+                const response = await fetch('http://localhost:3000/api/ollama/stop', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to stop Ollama server');
+                }
+                
+                showError('Stopping Ollama server...', 'success');
+                setTimeout(checkOllamaStatus, 2000);
+            } catch (error) {
+                console.error('Error stopping server:', error);
+                showError(`Failed to stop Ollama server: ${error.message}`);
+            }
+        }
+
+        
+
+        function updateStatusUI(isOnline) {
+            const buttonContainer = document.getElementById('server-button-container');
+            const modelSection = document.getElementById('model-section');
+            const availableModelSection = document.getElementById('available-model-section');
+            
+            if (isOnline) {
+                buttonContainer.innerHTML = `
+                    <button class="btn btn-stop" onclick="stopOllamaServer()">Stop Server</button>
+                `;
+                modelSection.classList.remove('hidden');
+                availableModelSection.classList.remove('hidden');
+            } else {
+                buttonContainer.innerHTML = `
+                    <button class="btn btn-start" onclick="startOllamaServer()">Start Server</button>
+                `;
+                modelSection.classList.add('hidden');
+                availableModelSection.classList.add('hidden');
+            }
+        }
+        
+        async function fetchAvailableModels() {
+            if (!isOllamaRunning) return;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ollama/models');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (Array.isArray(data.models)) {
+                    updateAvailableModelList(data.models);
+                }
+            } catch (error) {
+                console.error('Error fetching available models:', error);
+                showError(`Failed to fetch available models: ${error.message}`);
+            }
+        }
+
+        function updateModelList(models) {
+    const modelList = document.getElementById('model-list');
+    modelList.innerHTML = '';
+
+    if (!Array.isArray(models) || models.length === 0) {
+        modelList.innerHTML = '<p>No models installed yet.</p>';
+        return;
+    }
+
+    models.forEach(model => {
+        const modelCard = document.createElement('div');
+        modelCard.className = 'model-card';
+        
+        modelCard.innerHTML = `
+            <div class="model-info">
+                <div class="model-name">${model.name}</div>
+                ${model.size ? `<div class="model-meta">Size: ${formatSize(model.size)}</div>` : ''}
+            </div>
+            <div class="model-actions">
+                <button class="btn btn-secondary" onclick="removeModel('${model.name}')">Remove</button>
+            </div>
+        `;
+        modelList.appendChild(modelCard);
+    });
+}
+
+function updateAvailableModelList(models) {
+            const availableModelList = document.getElementById('available-model-list');
+            availableModelList.innerHTML = '';
+
+            if (!Array.isArray(models) || models.length === 0) {
+                availableModelList.innerHTML = '<p>No available models found.</p>';
+                return;
+            }
+
+            // Group models by their base name
+            const groupedModels = models.reduce((acc, modelName) => {
+                const [baseName, version] = modelName.split(':');
+                if (!acc[baseName]) {
+                    acc[baseName] = [];
+                }
+                acc[baseName].push({ fullName: modelName, version: version || 'latest' });
+                return acc;
+            }, {});
+
+            // Create a card for each model group
+            Object.entries(groupedModels).forEach(([baseName, versions]) => {
+                const modelCard = document.createElement('div');
+                modelCard.className = 'model-card';
+
+                // If there's only one version, we'll use it automatically
+                const singleVersion = versions.length === 1 ? versions[0] : null;
+
+                const modelContent = `
+    <div class="model-header">
+        <div class="model-name">${baseName}</div>
+        ${singleVersion ? 
+            `<div class="model-version-text">${singleVersion.version}</div>` :
+            `<div class="model-versions">
+                ${versions.map(model => `
+                    <div class="version-checkbox">
+                        <input type="radio" 
+                            id="${model.fullName}" 
+                            name="${baseName}-versions" 
+                            value="${model.fullName}">
+                        <label for="${model.fullName}">${model.version}</label>
+                    </div>
+                `).join('')}
+            </div>`
+        }
+        <div class="pull-button-container">
+            <button class="btn btn-primary" 
+                onclick="pullSelectedModel('${baseName}', ${singleVersion ? `'${singleVersion.fullName}'` : 'null'})" 
+                id="pull-${baseName}">
+                Pull Model
+            </button>
+        </div>
+    </div>
+`;
+                modelCard.innerHTML = modelContent;
+                availableModelList.appendChild(modelCard);
+            });
+        }
+
+        async function pullSelectedModel(baseName, singleVersionName = null) {
+    const modelName = singleVersionName || document.querySelector(`input[name="${baseName}-versions"]:checked`)?.value;
+
+    if (!modelName) {
+        showError(`Please select a version of ${baseName} to install.`);
+        return;
+    }
+
+    // Show the installation modal
+    showInstallationModal(modelName);
+
+    // Disable all pull buttons
+    const pullButtons = document.querySelectorAll('.btn-primary');
+    pullButtons.forEach(button => {
+        button.disabled = true;
+        button.classList.add('disabled');
+    });
+
+    try {
+        // Start the pull process
+        const response = await fetch(`http://localhost:3000/api/ollama/pull/${modelName}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to initiate pull: ${response.statusText}`);
+        }
+
+        // Start polling for progress
+        const pollInterval = setInterval(async () => {
+            try {
+                const progressResponse = await fetch(`http://localhost:3000/api/ollama/pull/progress/${modelName}`);
+                const progressData = await progressResponse.json();
+
+                if (progressData.status === 'downloading') {
+                    // Update progress bar
+                    const progressFill = document.getElementById('progress-fill');
+                    const progressText = document.getElementById('progress-percentage');
+                    progressFill.style.width = `${progressData.progress}%`;
+                    progressText.textContent = `${progressData.progress}%`;
+
+                    // Update status information
+                    document.getElementById('downloaded-size').textContent = progressData.downloaded;
+                    document.getElementById('total-size').textContent = progressData.total;
+                    document.getElementById('download-speed').textContent = progressData.speed;
+                    document.getElementById('installation-status').textContent = 'Downloading...';
+                } else if (progressData.status === 'complete') {
+                    clearInterval(pollInterval);
+                    document.getElementById('installation-status').textContent = 'Installation complete!';
+                    setTimeout(() => {
+                        hideInstallationModal();
+                        showError(`Successfully pulled model ${modelName}`, 'success');
+                        checkOllamaStatus();
+                        enablePullButtons(pullButtons);
+                    }, 2000);
+                } else if (progressData.status === 'error') {
+                    clearInterval(pollInterval);
+                    document.getElementById('installation-status').textContent = 'Installation failed!';
+                    document.getElementById('warning-text').textContent = progressData.message;
+                    document.getElementById('warning-text').classList.remove('hidden');
+                    setTimeout(() => {
+                        hideInstallationModal();
+                        showError(`Failed to pull model ${modelName}: ${progressData.message}`, 'error');
+                        enablePullButtons(pullButtons);
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Error polling progress:', error);
+                clearInterval(pollInterval);
+                hideInstallationModal();
+                showError(`Failed to pull model ${modelName}: ${error.message}`);
+                enablePullButtons(pullButtons);
+            }
+        }, 1000); // Poll every second
+    } catch (error) {
+        console.error('Error initiating model pull:', error);
+        hideInstallationModal();
+        showError(`Failed to pull model ${modelName}: ${error.message}`);
+        enablePullButtons(pullButtons);
+    }
+}
+
+// Update showError function to handle progress updates better
+function showError(message, type = 'error') {
+    const errorElement = document.getElementById('error-message');
+    if (!errorElement) return;
+    
+    errorElement.textContent = message;
+    errorElement.classList.remove('hidden');
+    
+    if (type === 'error') {
+        errorElement.style.backgroundColor = '#fef2f2';
+        errorElement.style.borderColor = '#fee2e2';
+        errorElement.style.color = '#ef4444';
+    } else {
+        errorElement.style.backgroundColor = '#f0fdf4';
+        errorElement.style.borderColor = '#dcfce7';
+        errorElement.style.color = '#16a34a';
+    }
+    
+    // Only auto-hide error messages, not progress or success messages
+    if (type === 'error') {
+        setTimeout(() => {
+            errorElement.classList.add('hidden');
+        }, 5000);
+    }
+}
+async function removeModel(modelName) {
+            if (!modelName || !isOllamaRunning) return;
+            
+            try {
+                const response = await fetch('http://localhost:11434/api/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: modelName })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to remove model: ${response.statusText}`);
+                }
+
+                await checkOllamaStatus();
+                showError(`Successfully removed model ${modelName}`, 'success');
+            } catch (error) {
+                console.error('Error removing model:', error);
+                showError(`Failed to remove model ${modelName}: ${error.message}`);
+            }
+        }
+
+        function formatSize(bytes) {
+            if (!bytes || isNaN(bytes) || bytes === 0) return null;
+            
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const bytes_num = parseInt(bytes);
+            
+            if (isNaN(bytes_num)) return null;
+            
+            let size = bytes_num;
+            let i = 0;
+            
+            while (size >= 1024 && i < sizes.length - 1) {
+                size /= 1024;
+                i++;
+            }
+            
+            return `${size.toFixed(2)} ${sizes[i]}`;
+        }
+
+// Update showError function to handle progress updates better
+function showError(message, type = 'error') {
+    const errorElement = document.getElementById('error-message');
+    if (!errorElement) return;
+    
+    errorElement.textContent = message;
+    errorElement.classList.remove('hidden');
+    
+    if (type === 'error') {
+        errorElement.style.backgroundColor = '#fef2f2';
+        errorElement.style.borderColor = '#fee2e2';
+        errorElement.style.color = '#ef4444';
+    } else {
+        errorElement.style.backgroundColor = '#f0fdf4';
+        errorElement.style.borderColor = '#dcfce7';
+        errorElement.style.color = '#16a34a';
+    }
+    
+    // Only auto-hide error messages, not progress or success messages
+    if (type === 'error') {
+        setTimeout(() => {
+            errorElement.classList.add('hidden');
+        }, 5000);
+    }
+}
+        // Initialize and set up periodic checks
+        document.addEventListener('DOMContentLoaded', () => {
+            checkOllamaStatus();
+            setInterval(checkOllamaStatus, 30000);
+        });
+        
+        // Function to show the installation modal
+function showInstallationModal(modelName) {
+    const modal = document.getElementById('installation-modal');
+    document.getElementById('model-name').textContent = modelName;
+    modal.classList.remove('hidden');
+}
+
+// Function to hide the installation modal
+function hideInstallationModal() {
+    const modal = document.getElementById('installation-modal');
+    modal.classList.add('hidden');
+    
+    // Reset all values
+    document.getElementById('downloaded-size').textContent = '-';
+    document.getElementById('total-size').textContent = '-';
+    document.getElementById('download-speed').textContent = '-';
+    document.getElementById('progress-fill').style.width = '0%';
+    document.getElementById('progress-percentage').textContent = '0%';
+    document.getElementById('installation-status').textContent = '';
+    document.getElementById('warning-text').classList.add('hidden');
+}
+    </script>
+    <script src="js/main.js"></script>
+</body>
+</html>
