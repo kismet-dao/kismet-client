@@ -4,4 +4,6 @@ resources/
 *.lock 
 *.env
 .DS_Store
+.wallet.enc
+.wallet.public.enc
 package-lock.json
